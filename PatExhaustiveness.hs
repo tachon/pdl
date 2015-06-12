@@ -72,9 +72,9 @@ simplifyM c (v:m) =
     Nothing -> simplifyM c m
     Just v1 -> v1 : simplifyM c m
   
-defaultM []    = []
+defaultM []                = []
 defaultM (((Cst _ _):v):m) = defaultM m
-defaultM ((Wildcard:v):m)   = v : defaultM m
+defaultM ((Wildcard:v):m)  = v : defaultM m
   
 
 u m []               = mytrace ("end M = " ++ (show m))
@@ -96,6 +96,16 @@ u m (Wildcard:v)     =
     u (defaultM m) v
 
 
+allRulesUsefull rules =
+  let m = ruleToMat rules in
+  foldr (\vp acc ->
+          acc && 
+          (myError ("This pattern :\n" ++ showPsPv vp ++
+                    "\nWill be ignored because it is " ++
+                    "overlapping with ohers")                
+           (u (List.delete vp m) vp))
+        ) True m 
+    
 notInSigma sigma =
   let allsig = (consOfType $ typ $ head $ (Set.toList sigma))
   in head $ Set.fold List.delete allsig sigma
@@ -171,3 +181,7 @@ patWellTyped t (Cons i vp) =
       (t == typ c))
      && (and $ map(\(t1, p1) ->
                     patWellTyped t1 p1) (zip (sub c) vp))
+
+
+showPsPv [a,b] = "Fun \t(" ++ show a ++ ") \t(" ++ show b ++ ")"
+showPsPv l     = show l
