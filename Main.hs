@@ -6,11 +6,11 @@ import Debug.Trace
 
 import AST
 import ValidityChecking
-
+import Example
 import ViewDetermination
 
 main = do
-  print $ validityChecking rex
+  print $ validityChecking rex cex
 {-
   print rex
   print $ reversedRules rex

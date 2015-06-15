@@ -9,14 +9,14 @@ import qualified Data.Set as Set
 import qualified Data.List as List
 
 
-syntacticConstraint rules =
+syntacticConstraint cons rules =
  argFunInPat rules
- && goodNbSubInRules rules
+ && goodNbSubInRules cons rules
 
-totalityChecking rules =
-  wellTyped rules &&
-  allRulesUsefull rules &&
-  case i (ruleToMat rules) 2 of
+totalityChecking cons rules =
+  wellTyped cons rules &&
+  allRulesUsefull cons rules &&
+  case i cons (ruleToMat rules) 2 of
     Nothing -> True
     Just p  -> trace ("Pattern not exhaustive \n"
                       ++ "This pattern is not represented :\n"
@@ -25,10 +25,10 @@ totalityChecking rules =
 
 
   
-validityChecking rules =
-  syntacticConstraint rules &&
+validityChecking rules constructors =
+  syntacticConstraint constructors rules &&
 --Check Totality
-  totalityChecking rules &&
+  totalityChecking constructors rules &&
 --Check View Determination
   putSInjective rules
 
@@ -64,18 +64,18 @@ argFunInPat rules =
 
 
 
-goodNbSubInRules rules =
+goodNbSubInRules cons rules =
   and $ map (\r -> myError ("In rule\n" ++ show r)
-                   ((   goodNumberSub $ ps r)
-                    && (goodNumberSub $ pv r)
-                    && (goodNumberSub $ xpr r))) rules
+                   ((   goodNumberSub cons $ ps r)
+                    && (goodNumberSub cons $ pv r)
+                    && (goodNumberSub cons $ xpr r))) rules
 
-
+ 
 instance PatExpr Pat where
-  goodNumberSub (Var _)     = True
-  goodNumberSub (LAV _ p)   = goodNumberSub p
-  goodNumberSub (Cons i vp) =
-    let c    = getC i
+  goodNumberSub _ (Var _)        = True
+  goodNumberSub cons (LAV _ p)   = goodNumberSub cons p
+  goodNumberSub cons (Cons i vp) =
+    let c    = getC cons i
         lsub = length $ sub c
         lvp  = length vp
     in (myError ("Constructor " ++ show i ++
@@ -83,13 +83,13 @@ instance PatExpr Pat where
                 " patterns but here is applicate to " ++ 
                 show lvp ++ " patterns")
         (lvp == lsub)
-       ) && (and $ map goodNumberSub vp)
+       ) && (and $ map (goodNumberSub cons) vp)
 
 instance PatExpr Expr where
-  goodNumberSub (VarE _)    = True
-  goodNumberSub (Fun _ _ _) = True
-  goodNumberSub (CE i vp)   =    
-    let c    = getC i
+  goodNumberSub _ (VarE _)     = True
+  goodNumberSub _ (Fun _ _ _)  = True
+  goodNumberSub cons (CE i vp) =    
+    let c    = getC cons i
         lsub = length $ sub c
         lvp  = length vp
     in (myError ("Constructor " ++ show i ++
@@ -97,4 +97,4 @@ instance PatExpr Expr where
                  " patterns but here is applicate to " ++ 
                  show lvp ++ " patterns")
         (lvp == lsub)
-       ) && (and $ map goodNumberSub vp)
+       ) && (and $ map (goodNumberSub cons) vp)

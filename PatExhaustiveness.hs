@@ -5,6 +5,7 @@ import qualified Data.List as List
 import Debug.Trace
 
 import AST
+import Example
 
 data P = Cst ID [P] | Wildcard deriving(Eq)
 
@@ -31,19 +32,18 @@ ruleToMat (r:rs) =
   [(prToP $ ps r) , (prToP $ pv r)]
   : ruleToMat rs
 
-createSigma :: [[P]] -> Set.Set C
-createSigma [] = Set.empty
-createSigma ([]:_) = mytrace "Error : one line is empty" Set.empty
-createSigma ((p:pline):pcol) =
+createSigma _ [] = Set.empty
+createSigma _ ([]:_) = mytrace "Error : one line is empty"
+                       Set.empty
+createSigma cons ((p:pline):pcol) =
   case p of
-    Cst id _ -> Set.insert (getC id) (createSigma pcol)
+    Cst id _ -> Set.insert (getC cons id) (createSigma cons pcol)
     Wildcard  -> Set.empty
 
-isCompleteSig :: Set.Set C -> Bool
-isCompleteSig sigma =
+isCompleteSig cons sigma =
   (not $ Set.null sigma) && 
   (and $ map (\c -> Set.member c sigma)
-  (consOfType $ typ $ head $ (Set.toList sigma)))
+  (consOfType cons $ typ $ head $ (Set.toList sigma)))
 
 
 simplifyVM c []                =
@@ -77,110 +77,111 @@ defaultM (((Cst _ _):v):m) = defaultM m
 defaultM ((Wildcard:v):m)  = v : defaultM m
   
 
-u m []               = mytrace ("end M = " ++ (show m))
+u _ m []               = mytrace ("end M = " ++ (show m))
                        (length m == 0)
-u m ((Cst id pv):v) =
-  let c = getC id
+u cons m ((Cst id pv):v) =
+  let c = getC cons id
       _ = verifyInvariant m ((Cst id pv):v) 0
       
-  in u (simplifyM c m) (simplifyV c ((Cst id pv):v))
+  in u cons (simplifyM c m) (simplifyV c ((Cst id pv):v))
 
-u m (Wildcard:v)     =
-  let sigma = createSigma m
+u cons m (Wildcard:v)     =
+  let sigma = createSigma cons m
       _     = mytrace ("sigma = " ++ Set.showTree sigma)
               verifyInvariant m (Wildcard:v) 0 in
-  if (isCompleteSig sigma) then
-    or $ map (\c -> u (simplifyM c m) (simplifyV c (Wildcard:v)) 
+  if (isCompleteSig cons sigma) then
+    or $ map (\c -> u cons (simplifyM c m)
+                    (simplifyV c (Wildcard:v)) 
              ) (Set.toList sigma)
   else
-    u (defaultM m) v
+    u cons (defaultM m) v
 
 
-allRulesUsefull rules =
+allRulesUsefull cons rules =
   let m = ruleToMat rules in
   foldr (\vp acc ->
           acc && 
           (myError ("This pattern :\n" ++ showPsPv vp ++
                     "\nWill be ignored because it is " ++
                     "overlapping with ohers")                
-           (u (List.delete vp m) vp))
+           (u cons (List.delete vp m) vp))
         ) True m 
     
-notInSigma sigma =
-  let allsig = (consOfType $ typ $ head $ (Set.toList sigma))
+notInSigma cons sigma =
+  let allsig = (consOfType cons $ typ $ head $ (Set.toList sigma))
   in head $ Set.fold List.delete allsig sigma
 
 
-i m 0 = if length m == 0 then Just [] else Nothing
-i m n =
-  let sigma = createSigma m in
-  if (isCompleteSig sigma) then
+i _ m 0    = if length m == 0 then Just [] else Nothing
+i cons m n =
+  let sigma = createSigma cons m in
+  if (isCompleteSig cons sigma) then
     mytrace ("Complete sig, M=\n" ++ (show m)
             ++ "\nn = " ++ (show n))
-    (findNEC m n (Set.toList sigma))
+    (findNEC cons m n (Set.toList sigma))
   else
-    case i (defaultM m) (n-1) of
+    case i cons (defaultM m) (n-1) of
       Nothing -> Nothing
       Just vp ->
         if Set.null sigma then
           Just $ Wildcard:vp
         else
-          let c = notInSigma sigma in
+          let c = notInSigma cons sigma in
           Just $ (Cst (idt c) (take (arity c)
                                 (repeat Wildcard))) : vp
     
 
-findNEC m n []    = Nothing
-findNEC m n (c:v) =
+findNEC _ _ _ []       = Nothing
+findNEC cons m n (c:v) =
   let m1 = mytrace2 "findNEC : simplifiedM : \n" (simplifyM c m)
       c1 = n - 1 + arity (mytrace2 "with c = " c) 
-  in case i m1 c1 of
-    Nothing -> findNEC m n v
+  in case i cons m1 c1 of
+    Nothing -> findNEC cons m n v
     Just vp ->
       let (h,t) = splitAt (arity c) vp in
       Just $ (Cst (idt c) h) : t
 
 
-wellTyped rules =
+wellTyped cons rules =
   and $ map (
     \r ->
     (myError ("in source Pattern of rule :\n" ++ show r)
-     (patWellTyped typeofPS (ps r))) &&
+     (patWellTyped cons typeofPS (ps r))) &&
     
     (myError ("in view Pattern of rule :\n" ++ show r)
-     (patWellTyped typeofPV (pv r))) &&
+     (patWellTyped cons typeofPV (pv r))) &&
 
     (myError ("in right hand side of rule :\n" ++ show r)
-     (exprWellTyped typeofExpr (xpr r)))
+     (exprWellTyped cons typeofExpr (xpr r)))
     ) rules 
 
 
-exprWellTyped t (Fun n v1 v2) =
+exprWellTyped _ t (Fun n v1 v2) =
   (myError ("This function call " ++ show (Fun n v1 v2)
             ++ " \tis of type " ++ show typeofExpr
             ++ " but is supposed to be of type " ++ show t)
    (t == typeofExpr))
-exprWellTyped _ (VarE _)    = True
-exprWellTyped t (CE i vp)   =
-  let c = getC i
+exprWellTyped _ _ (VarE _)    = True
+exprWellTyped cons t (CE i vp)   =
+  let c = getC cons i
   in (myError ("This expression : " ++ show (CE i vp)
                ++ " \tis of type " ++ show (typ c)
                ++ " but is supposed to be of type " ++ show t)
       (t == typ c)) &&
      (and $ map(\(t1, p1) ->
-                 exprWellTyped t1 p1) (zip (sub c) vp))
+                 exprWellTyped cons t1 p1) (zip (sub c) vp))
 
 
-patWellTyped _ (Var _)     = True
-patWellTyped t (LAV _ p)   = patWellTyped t p
-patWellTyped t (Cons i vp) =
-  let c = getC i
+patWellTyped _ _ (Var _)     = True
+patWellTyped cons t (LAV _ p)   = patWellTyped cons t p
+patWellTyped cons t (Cons i vp) =
+  let c = getC cons i
   in (myError ("This pattern : " ++ show (Cons i vp)
                ++ " \tis of type " ++ show (typ c)
                ++ " but is supposed to be of type " ++ show t)
       (t == typ c))
      && (and $ map(\(t1, p1) ->
-                    patWellTyped t1 p1) (zip (sub c) vp))
+                    patWellTyped cons t1 p1) (zip (sub c) vp))
 
 
 showPsPv [a,b] = "Fun \t(" ++ show a ++ ") \t(" ++ show b ++ ")"

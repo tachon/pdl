@@ -21,33 +21,25 @@ myError msg b   = if b then b else trace msg False
 
 type ID = String  --may switch to string
 
-data Tip = List | Tag | Val deriving (Show, Eq, Ord)
+type Tip = String
 
 data C = C { idt :: ID,
              typ :: Tip,
              sub :: [Tip] 
            } deriving (Show, Eq, Ord)
 
-typeofPS   = List
-typeofPV   = List
-typeofExpr = List
-
-cl = [ C { idt="[]", typ=List, sub = []},           -- []
-       C { idt=":", typ=List, sub = [Tag, List]}, -- h:l
-       C { idt="A", typ=Tag, sub = [Val]},        -- A
-       C { idt="B", typ=Tag, sub = [Val]}]        -- B
        
-getC id = case List.find ((==) id . idt) cl of
+getC cl id = case List.find ((==) id . idt) cl of
    Just c -> c
    Nothing -> trace ("Constructor "++ show id
                       ++ "does not exist")
-               C {idt="", typ=List, sub = []}
+               C {idt="", typ="", sub = []}
 
-consOfType t = filter (\c -> typ c == t ) cl
+consOfType cl t = filter (\c -> typ c == t ) cl
 
 arity c = length $ sub c
 
-----------------------------------------------------------
+------------------------------------------------------------------
 
 -- Pattern source
 data Pat = Cons ID [Pat]        
@@ -65,45 +57,6 @@ data Rule = Rule { name :: String,
                    xpr :: Expr
                  } deriving (Eq)
 
-
-rex = [Rule {name="putAs",
-             ps  =(Cons "[]" []), pv =(Cons "[]" []), xpr =(CE "[]" [])},
-     
-       Rule {name="putAs",
-             ps  =(LAV "ss" (Cons "[]" [])),
-             pv  =(Cons ":" [(Var "v"), (Var "vs")]),
-             xpr =(CE ":" [CE "A" [(VarE "v")],
-                         (Fun "putAs" "ss" "vs")])},
-       
-       Rule {name="putAs",
-             ps  =(Cons ":" [(Cons "A" [(Var "a")]), (Var "ss")]),
-             pv  =(LAV "vs" (Cons "[]" [])),
-             xpr =(Fun "putAs" "ss" "vs")},
-       
-       Rule {name="putAs",
-             ps  =(Cons ":" [(Cons "A" [(Var "a")]), (Var "ss")]),
-             pv  =(Cons ":" [(Var "v"), (Var "vs")]),
-             xpr =(CE ":" [CE "A" [(VarE "v")],
-                         (Fun "putAs" "ss" "vs")])},
-       
-       Rule {name="putAs",
-             ps  =(Cons ":" [(Cons "B" [(Var "b")]), (Var "ss")]),
-             pv  =(Var "vs"),
-             xpr =(CE ":" [CE "B" [(VarE "b")],
-                         (Fun "putAs" "ss" "vs")])}       
-      ]
-      
-rex1 = [Rule {name="putAs",
-              ps  =(Var "s"), pv =(Cons "[]" []), xpr =(CE "[]" [])},
-        
-        Rule {name="putAs",
-              ps  =(Var "s"),
-              pv  =(Cons ":" [(Var "v"), (Var "vs")]),
-              xpr =(CE ":" [CE "A" [(VarE "v")],
-                          (Fun "putAs" "ss" "vs")])}
-       ]
-       
-       
 ------------------------------------------------------------------
 
 data RExpr = CRE ID [RExpr]
@@ -152,4 +105,4 @@ getArgFun (CE i xpl)    =
     
 
 class PatExpr a where
-  goodNumberSub :: a -> Bool
+  goodNumberSub :: [C] -> a -> Bool
