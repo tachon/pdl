@@ -11,7 +11,9 @@ import qualified Data.List as List
 
 syntacticConstraint cons rules =
  argFunInPat rules
+ && isAffine rules
  && goodNbSubInRules cons rules
+ 
 
 totalityChecking cons rules =
   wellTyped cons rules &&
@@ -27,10 +29,8 @@ totalityChecking cons rules =
   
 validityChecking rules constructors =
   syntacticConstraint constructors rules &&
---Check Totality
-  totalityChecking constructors rules &&
---Check View Determination
-  putSInjective rules
+  totalityChecking constructors rules && --Check Totality
+  putSInjective rules --Check View Determination
 
 
 
@@ -46,8 +46,8 @@ argFunInPat rules =
                  ++ show r
                  ++ "Must be variables which exists" 
                  ++ " in their respective patterns")
-        (Set.member a1 (getVariablesP $ ps r) &&
-         Set.member a2 (getVariablesP $ pv r))
+        (Set.member a1 (getVariables $ ps r) &&
+         Set.member a2 (getVariables $ pv r))
         ) &&
         myError ("As there is a function call in rule :\n"
                  ++ show r
@@ -62,6 +62,27 @@ argFunInPat rules =
             _                    -> True)        
   ) rules
 
+isAffine rules =
+  and $ map
+  (\r -> let e = xpr r in
+    myError ("In right side of rule :\n" ++ show r)
+    (fst $ affineAux (getVariables e) e)) rules
+
+affineAux set (Fun _ s1 s2) =
+  ((myError ("The variable " ++ show s1 ++
+             " must appear only once")
+   (Set.member s1 set)) &&
+  (myError ("The variable " ++ show s2 ++
+            " must appear only once")
+   (Set.member s2 set)), (Set.delete s2 $ Set.delete s1 set))
+affineAux set (VarE s)      =
+  (myError ("The variable " ++ show s ++ " must appear only once")
+  $ Set.member s set , Set.delete s set)
+affineAux set (CE _ xp)     =
+  foldl (\(b1, set1) p ->
+          let (b2,set2) = affineAux set1 p in
+          (b1 && b2, set2) 
+        ) (True, set) xp
 
 
 goodNbSubInRules cons rules =
@@ -71,30 +92,3 @@ goodNbSubInRules cons rules =
                     && (goodNumberSub cons $ xpr r))) rules
 
  
-instance PatExpr Pat where
-  goodNumberSub _ (Var _)        = True
-  goodNumberSub cons (LAV _ p)   = goodNumberSub cons p
-  goodNumberSub cons (Cons i vp) =
-    let c    = getC cons i
-        lsub = length $ sub c
-        lvp  = length vp
-    in (myError ("Constructor " ++ show i ++
-                " should be applicate to " ++ show lsub ++
-                " patterns but here is applicate to " ++ 
-                show lvp ++ " patterns")
-        (lvp == lsub)
-       ) && (and $ map (goodNumberSub cons) vp)
-
-instance PatExpr Expr where
-  goodNumberSub _ (VarE _)     = True
-  goodNumberSub _ (Fun _ _ _)  = True
-  goodNumberSub cons (CE i vp) =    
-    let c    = getC cons i
-        lsub = length $ sub c
-        lvp  = length vp
-    in (myError ("Constructor " ++ show i ++
-                 " should be applicate to " ++ show lsub ++
-                 " patterns but here is applicate to " ++ 
-                 show lvp ++ " patterns")
-        (lvp == lsub)
-       ) && (and $ map (goodNumberSub cons) vp)

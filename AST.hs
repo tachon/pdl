@@ -1,6 +1,6 @@
 module AST where
 
---import qualified Data.Set as Set
+import qualified Data.Set as Set
 import qualified Data.List as List
 import Debug.Trace
 -----------------------------------------------------------
@@ -70,7 +70,7 @@ data ReversedRule = RRule { rn :: String,
 
 instance Show Pat where
   show (Cons i pl)   = "C " ++ show i ++ " " ++ show pl
-  show (LAV v p)     = "("++ show v ++ " @ " ++ show p ++ ")"
+  show (LAV v p)     = show v ++ " @ " ++ show p
   show (Var v)       = show v
 
 instance Show Expr where
@@ -89,9 +89,9 @@ instance Show ReversedRule where
 
 instance Show Rule where
   show (Rule {name=s, ps=src, pv=vew, xpr=xp}) =
-    show s   ++ " " ++
-    show src ++ "   " ++
-    show vew ++ "  =  " ++
+    show s   ++ " (" ++
+    show src ++ ")   (" ++
+    show vew ++ ")  =  " ++
     show xp  ++ "\n"
 
 getArgFun (VarE _)      = Nothing
@@ -106,3 +106,42 @@ getArgFun (CE i xpl)    =
 
 class PatExpr a where
   goodNumberSub :: [C] -> a -> Bool
+  getVariables  :: a -> Set.Set String
+
+instance PatExpr Pat where
+  getVariables (LAV s p)     = Set.insert s (getVariables p)
+  getVariables (Var s)       = Set.singleton s
+  getVariables (Cons _ vp)   =
+    foldl (\acc p -> Set.union acc (getVariables p)) Set.empty vp
+
+  goodNumberSub _    (Var _)     = True
+  goodNumberSub cons (LAV _ p)   = goodNumberSub cons p
+  goodNumberSub cons (Cons i vp) =
+    let c    = getC cons i
+        lsub = length $ sub c
+        lvp  = length vp
+    in (myError ("Constructor " ++ show i ++
+                " should be applicate to " ++ show lsub ++
+                " patterns but here is applicate to " ++ 
+                show lvp ++ " patterns")
+        (lvp == lsub)
+       ) && (and $ map (goodNumberSub cons) vp)
+
+instance PatExpr Expr where
+  getVariables (Fun _ s1 s2) = Set.insert s1 $ Set.singleton s2
+  getVariables (VarE s)      = Set.singleton s
+  getVariables (CE _ xp)     =
+    foldl (\acc p -> Set.union acc (getVariables p)) Set.empty xp
+    
+  goodNumberSub _ (VarE _)     = True
+  goodNumberSub _ (Fun _ _ _)  = True
+  goodNumberSub cons (CE i vp) =    
+    let c    = getC cons i
+        lsub = length $ sub c
+        lvp  = length vp
+    in (myError ("Constructor " ++ show i ++
+                 " should be applicate to " ++ show lsub ++
+                 " patterns but here is applicate to " ++ 
+                 show lvp ++ " patterns")
+        (lvp == lsub)
+       ) && (and $ map (goodNumberSub cons) vp)

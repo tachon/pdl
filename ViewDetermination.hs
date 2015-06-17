@@ -8,24 +8,14 @@ import AST
 
 newVar = "ss'"
 
-getVariablesP (LAV s p)    = Set.insert s (getVariablesP p)
-getVariablesP (Var s)      = Set.singleton s
-getVariablesP (Cons _ vp)  =
-  foldl (\_ p -> getVariablesP p) Set.empty vp
-
-getVariablesExpr (Fun _ s1 s2) = Set.insert s1 $ Set.singleton s2
-getVariablesExpr (VarE s)      = Set.singleton s
-getVariablesExpr (CE _ xp)     =
-  foldl (\_ p -> getVariablesExpr p) Set.empty xp
-
 pvInXP rule =
   myError
   ("All variables in view pattern must appear in " ++
    "right hand side expression to satisfy " ++
    "view determination in rule :\n" ++ show rule) 
-  ((getVariablesP $ pv $ rule)
+  ((getVariables $ pv $ rule)
   `Set.isSubsetOf`  
-  (getVariablesExpr $ xpr $ rule))
+  (getVariables $ xpr $ rule))
     
 putSInjective rules = and $ map pvInXP rules
 
