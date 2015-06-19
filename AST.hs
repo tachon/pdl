@@ -145,3 +145,23 @@ instance PatExpr Expr where
                  show lvp ++ " patterns")
         (lvp == lsub)
        ) && (and $ map (goodNumberSub cons) vp)
+
+
+instance PatExpr RExpr where
+  getVariables (FunRE _ s) = Set.singleton s
+  getVariables (VarRE s)   = Set.singleton s
+  getVariables (CRE _ xp)  = 
+    foldl (\acc p -> Set.union acc (getVariables p)) Set.empty xp
+    
+  goodNumberSub _ (VarRE _)     = True
+  goodNumberSub _ (FunRE _ _)   = True
+  goodNumberSub cons (CRE i vp) =    
+    let c    = getC cons i
+        lsub = length $ sub c
+        lvp  = length vp
+    in (myError ("Constructor " ++ show i ++
+                 " should be applicate to " ++ show lsub ++
+                 " patterns but here is applicate to " ++ 
+                 show lvp ++ " patterns")
+        (lvp == lsub)
+       ) && (and $ map (goodNumberSub cons) vp)

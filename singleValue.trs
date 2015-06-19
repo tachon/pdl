@@ -1,0 +1,6 @@
+(Var b ss' v)
+(RULES
+  RputAs([]()) -> []()
+  RputAs(:(A(v),ss')) -> :(v,RputAs(ss'))
+  RputAs(:(B(b),ss')) -> RputAs(ss')
+)

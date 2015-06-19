@@ -184,5 +184,6 @@ patWellTyped cons t (Cons i vp) =
                     patWellTyped cons t1 p1) (zip (sub c) vp))
 
 
-showPsPv [a,b] = "Fun \t(" ++ show a ++ ") \t(" ++ show b ++ ")"
+showPsPv [a,b] = "F   (" ++ show a ++ ")   ("
+                 ++ show b ++ ")  =  e"
 showPsPv l     = show l

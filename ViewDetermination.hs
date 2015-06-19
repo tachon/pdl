@@ -63,3 +63,37 @@ doNothing r =
 normalize rrules =
   filter (not . doNothing) (List.nub rrules)
   
+
+getAllRRulesVar rrules =
+  foldl (\vars rr ->
+          (getVariables $ ip rr)
+          `Set.union` (getVariables $ op rr)
+          `Set.union` vars) Set.empty rrules
+
+
+rulesToCSIFile rrules =
+  let vs = List.intercalate " " $
+           Set.toList $
+           getAllRRulesVar rrules in
+  "(Var " ++ vs ++ ")"
+  ++ "\n(RULES\n" ++
+  (foldl (\str rr -> str ++
+           "  " ++ (rn rr) ++ "("
+           ++ (toCSIp $ ip rr)
+           ++ ") -> "
+           ++ (toCSIre $ op rr)
+           ++ "\n"
+         ) "" rrules)
+  ++ ")"
+
+toCSIp (Cons id vp) =
+  id ++ "(" ++ (List.intercalate "," $ map toCSIp vp) ++ ")"
+toCSIp (LAV _ p)    = toCSIp p
+toCSIp (Var s  )    = s
+
+
+toCSIre (CRE id ve)      =
+  id ++ "(" ++ (List.intercalate "," $ map toCSIre ve) ++ ")"
+toCSIre (VarRE s  )      = s
+toCSIre (FunRE name arg) =
+  name ++ "(" ++ arg ++ ")"
