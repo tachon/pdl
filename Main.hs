@@ -14,20 +14,33 @@ import ViewDetermination
 
 csiFile="singleValue.trs"
 
+constructors=cex
+rules=rex
+
 main = do
-  --print $ validityChecking rex cex
 
+  if syntacticConstraint constructors rules then
+    putStrLn "Syntactic Constraint..........................ok"
+    else
+    putStrLn "Syntactic Constraints not respected"
 
-  --print "Rules :"
-  --print rex
-  --print "Reversed rules :"
-  --print $ reversedRules rex
-  --print "Normalized rules :"
+  if totalityChecking constructors rules then
+    putStrLn "Totality Checking.............................ok"
+    else
+    putStrLn "This put function is not total"
+
+  if putSInjective rules then
+    putStrLn "(Put s) Injective.............................ok"
+    else
+    putStrLn "(Put s) is not injective"
+
   writeFile csiFile $ rulesToCSIFile
     $ normalize $ reversedRules rex
-  (exitCode,stdo,stdr) <- readProcessWithExitCode "csi/csi.sh" [csiFile] ""
+  (exitCode,stdo,stdr) <- readProcessWithExitCode
+                          "csi/csi.sh" [csiFile] ""
   case exitCode of
-    ExitSuccess -> putStrLn "View determination ok !"
-    _ -> print ("The reverse rule is judge not confluent by CSI"
-           ++ "\nCSI output :\n" ++ stdo
-           ++ "\nCSI errors :\n" ++ stdr)
+    ExitSuccess ->
+      putStrLn "Rput Single-Valued............................ok"
+    _ -> print ("The reverse rule is found not confluent by CSI"
+                ++ "\nCSI output :\n" ++ stdo
+                ++ "\nCSI errors :\n" ++ stdr)

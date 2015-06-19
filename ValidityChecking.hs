@@ -27,13 +27,6 @@ totalityChecking cons rules =
 
 
   
-validityChecking rules constructors =
-  syntacticConstraint constructors rules &&
-  totalityChecking constructors rules && --Check Totality
-  putSInjective rules --Check View Determination
-
-
-
 argFunInPat rules =
   and $ map
   (\r ->
