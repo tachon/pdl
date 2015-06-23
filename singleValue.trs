@@ -1,6 +1,6 @@
 (Var b ss' v)
 (RULES
-  RputAs([]()) -> []()
-  RputAs(:(A(v),ss')) -> :(v,RputAs(ss'))
-  RputAs(:(B(b),ss')) -> RputAs(ss')
+  RputAs([]t()) -> []v()
+  RputAs(:t(A(v),ss')) -> :v(v,RputAs(ss'))
+  RputAs(:t(B(b),ss')) -> RputAs(ss')
 )

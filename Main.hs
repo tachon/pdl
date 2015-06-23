@@ -21,18 +21,21 @@ main = do
 
   if syntacticConstraint constructors rules then
     putStrLn "Syntactic Constraint..........................ok"
-    else
-    putStrLn "Syntactic Constraints not respected"
+    else do
+    putStrLn "Syntactic Constraints are not respected"
+    exitFailure
 
   if totalityChecking constructors rules then
     putStrLn "Totality Checking.............................ok"
-    else
+    else do
     putStrLn "This put function is not total"
+    exitFailure
 
   if putSInjective rules then
     putStrLn "(Put s) Injective.............................ok"
-    else
+    else do
     putStrLn "(Put s) is not injective"
+    exitFailure
 
   writeFile csiFile $ rulesToCSIFile
     $ normalize $ reversedRules rex
@@ -41,6 +44,8 @@ main = do
   case exitCode of
     ExitSuccess ->
       putStrLn "Rput Single-Valued............................ok"
-    _ -> print ("The reverse rule is found not confluent by CSI"
+    _ -> do
+      putStrLn ("The reverse rule is found not confluent by CSI"
                 ++ "\nCSI output :\n" ++ stdo
                 ++ "\nCSI errors :\n" ++ stdr)
+      exitFailure

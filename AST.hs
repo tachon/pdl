@@ -68,6 +68,7 @@ data ReversedRule = RRule { rn :: String,
                             op :: RExpr
                           } deriving (Eq)
 
+
 instance Show Pat where
   show (Cons i pl)   = "C " ++ show i ++ " " ++ show pl
   show (LAV v p)     = show v ++ " @ " ++ show p

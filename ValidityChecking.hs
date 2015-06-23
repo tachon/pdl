@@ -25,8 +25,6 @@ totalityChecking cons rules =
                       ++ (showPsPv p))
                False
 
-
-  
 argFunInPat rules =
   and $ map
   (\r ->
@@ -68,9 +66,11 @@ affineAux set (Fun _ s1 s2) =
   (myError ("The variable " ++ show s2 ++
             " must appear only once")
    (Set.member s2 set)), (Set.delete s2 $ Set.delete s1 set))
+
 affineAux set (VarE s)      =
   (myError ("The variable " ++ show s ++ " must appear only once")
   $ Set.member s set , Set.delete s set)
+
 affineAux set (CE _ xp)     =
   foldl (\(b1, set1) p ->
           let (b2,set2) = affineAux set1 p in
@@ -83,5 +83,3 @@ goodNbSubInRules cons rules =
                    ((   goodNumberSub cons $ ps r)
                     && (goodNumberSub cons $ pv r)
                     && (goodNumberSub cons $ xpr r))) rules
-
- 

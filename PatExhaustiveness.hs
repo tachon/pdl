@@ -2,6 +2,7 @@ module PatExhaustiveness where
 
 import qualified Data.Set as Set
 import qualified Data.List as List
+import qualified Data.Map as Map
 import Debug.Trace
 
 import AST
@@ -145,43 +146,72 @@ findNEC cons m n (c:v) =
 wellTyped cons rules =
   and $ map (
     \r ->
-    (myError ("in source Pattern of rule :\n" ++ show r)
-     (patWellTyped cons typeofPS (ps r))) &&
-    
-    (myError ("in view Pattern of rule :\n" ++ show r)
-     (patWellTyped cons typeofPV (pv r))) &&
-
-    (myError ("in right hand side of rule :\n" ++ show r)
-     (exprWellTyped cons typeofExpr (xpr r)))
+    let (b1, env1) = (patWellTyped cons typeofPS (ps r) Map.empty)
+        (b2, env2) = (patWellTyped cons typeofPV (pv r) Map.empty)
+    in  (myError ("in source Pattern of rule :\n" ++ show r) b1)
+        && (myError ("in view Pattern of rule :\n" ++ show r) b2)
+        && (myError ("in right hand side of rule :\n" ++ show r)
+         (exprWellTyped cons typeofExpr (xpr r)
+          (Map.union env1 env2)))
     ) rules 
 
 
-exprWellTyped _ t (Fun n v1 v2) =
+patWellTyped _ t (Var s) env        = (True, Map.insert s t env)
+patWellTyped cons t (LAV s p) env   =
+  patWellTyped cons t p (Map.insert s t env)
+patWellTyped cons t (Cons i vp) env =
+  let c = getC cons i
+      b = (myError ("This pattern : " ++ show (Cons i vp)
+               ++ " \tis of type " ++ show (typ c)
+               ++ " but is supposed to be of type " ++ show t)
+           (t == typ c))
+      (b1, env1) = foldl
+                   (\(wt, map) (t1, p1) ->
+                     let (wt1, map1) = patWellTyped cons t1 p1 env
+                     in (wt && wt1, Map.union map map1 )
+                   ) (True, env) (zip (sub c) vp)
+  in (b && b1, env1)
+--     (and $ map(\(t1, p1) ->
+--                    patWellTyped cons t1 p1) (zip (sub c) vp))
+
+
+exprWellTyped _ t (Fun n v1 v2) env =
   (myError ("This function call " ++ show (Fun n v1 v2)
             ++ " \tis of type " ++ show typeofExpr
             ++ " but is supposed to be of type " ++ show t)
    (t == typeofExpr))
-exprWellTyped _ _ (VarE _)    = True
-exprWellTyped cons t (CE i vp)   =
+  && Map.member v1 env &&
+  let t1 = env Map.! v1 in
+  (myError ("The variable " ++ show v1
+            ++ " in function call " ++ show (Fun n v1 v2)
+            ++ " \tis of type " ++ show t1
+            ++ " but is supposed to be of type " ++ show typeofPS)
+   (t1 == typeofPS))
+  && Map.member v2 env &&
+  let t1 = env Map.! v2 in
+  (myError ("The variable " ++ show v2
+            ++ " in function call " ++ show (Fun n v1 v2)
+            ++ " \tis of type " ++ show t1
+            ++ " but is supposed to be of type " ++ show typeofPV)
+   (t1 == typeofPV))
+  
+exprWellTyped _ t (VarE v) env  =
+  Map.member v env &&
+  let t1 = env Map.! v in
+  (myError ("The variable " ++ show v
+            ++ " \tis of type " ++ show t1
+            ++ " but is supposed to be of type " ++ show t)
+   (t1 == t))
+
+exprWellTyped cons t (CE i vp) env =
   let c = getC cons i
   in (myError ("This expression : " ++ show (CE i vp)
                ++ " \tis of type " ++ show (typ c)
                ++ " but is supposed to be of type " ++ show t)
       (t == typ c)) &&
      (and $ map(\(t1, p1) ->
-                 exprWellTyped cons t1 p1) (zip (sub c) vp))
+                 exprWellTyped cons t1 p1 env) (zip (sub c) vp))
 
-
-patWellTyped _ _ (Var _)     = True
-patWellTyped cons t (LAV _ p)   = patWellTyped cons t p
-patWellTyped cons t (Cons i vp) =
-  let c = getC cons i
-  in (myError ("This pattern : " ++ show (Cons i vp)
-               ++ " \tis of type " ++ show (typ c)
-               ++ " but is supposed to be of type " ++ show t)
-      (t == typ c))
-     && (and $ map(\(t1, p1) ->
-                    patWellTyped cons t1 p1) (zip (sub c) vp))
 
 
 showPsPv [a,b] = "F   (" ++ show a ++ ")   ("
