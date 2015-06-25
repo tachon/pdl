@@ -75,7 +75,7 @@ rulesToCSIFile rrules =
   let vs = List.intercalate " " $
            Set.toList $
            getAllRRulesVar rrules in
-  "(Var " ++ vs ++ ")"
+  "(VAR " ++ vs ++ ")"
   ++ "\n(RULES\n" ++
   (foldl (\str rr -> str ++
            "  " ++ (rn rr) ++ "("
