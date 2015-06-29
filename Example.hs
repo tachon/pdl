@@ -1,17 +1,17 @@
 module Example where
 import AST
 
-typeofPS   = "Tag List"
-typeofPV   = "Val List"
-typeofExpr = "Tag List"
+typeofPS   = "TagList"
+typeofPV   = "ValList"
+typeofExpr = "TagList"
 
 
 
-cex = [ C { idt="[]t", typ="Tag List", sub = []},              
-        C { idt="[]v", typ="Val List", sub = []},
+cex = [ C { idt="emptyT", typ="TagList", sub = []},
+        C { idt="emptyV", typ="ValList", sub = []},
         
-        C { idt=":t", typ="Tag List", sub = ["Tag", "Tag List"]},
-        C { idt=":v", typ="Val List", sub = ["Val", "Val List"]}, 
+        C { idt="consT", typ="TagList", sub = ["Tag", "TagList"]},
+        C { idt="consV", typ="ValList", sub = ["Val", "ValList"]}, 
 
         C { idt="A",  typ="Tag",  sub = ["Val"]},        
         C { idt="B",  typ="Tag",  sub = ["Val"]}]        
@@ -19,30 +19,30 @@ cex = [ C { idt="[]t", typ="Tag List", sub = []},
 
 
 rex = [Rule {name="putAs",
-             ps  =(Cons "[]t" []), pv =(Cons "[]v" []),
-             xpr =(CE "[]t" [])},
+             ps  =(Cons "emptyT" []), pv =(Cons "emptyV" []),
+             xpr =(CE "emptyT" [])},
      
        Rule {name="putAs",
-             ps  =(LAV "ss" (Cons "[]t" [])),
-             pv  =(Cons ":v" [(Var "v"), (Var "vs")]),
-             xpr =(CE ":t" [CE "A" [(VarE "v")],
+             ps  =(LAV "ss" (Cons "emptyT" [])),
+             pv  =(Cons "consV" [(Var "v"), (Var "vs")]),
+             xpr =(CE "consT" [CE "A" [(VarE "v")],
                             (Fun "putAs" "ss" "vs")])},
        
        Rule {name="putAs",
-             ps  =(Cons ":t" [(Cons "A" [(Var "a")]), (Var "ss")]),
-             pv  =(LAV "vs" (Cons "[]v" [])),
+             ps  =(Cons "consT" [(Cons "A" [(Var "a")]), (Var "ss")]),
+             pv  =(LAV "vs" (Cons "emptyV" [])),
              xpr =(Fun "putAs" "ss" "vs")},
        
        Rule {name="putAs",
-             ps  =(Cons ":t" [(Cons "A" [(Var "a")]), (Var "ss")]),
-             pv  =(Cons ":v" [(Var "v"), (Var "vs")]),
-             xpr =(CE ":t" [CE "A" [(VarE "v")],
+             ps  =(Cons "consT" [(Cons "A" [(Var "a")]), (Var "ss")]),
+             pv  =(Cons "consV" [(Var "v"), (Var "vs")]),
+             xpr =(CE "consT" [CE "A" [(VarE "v")],
                          (Fun "putAs" "ss" "vs")])},
        
        Rule {name="putAs",
-             ps  =(Cons ":t" [(Cons "B" [(Var "b")]), (Var "ss")]),
+             ps  =(Cons "consT" [(Cons "B" [(Var "b")]), (Var "ss")]),
              pv  =(Var "vs"),
-             xpr =(CE ":t" [CE "B" [(VarE "b")],
+             xpr =(CE "consT" [CE "B" [(VarE "b")],
                          (Fun "putAs" "ss" "vs")])}       
       ]
       

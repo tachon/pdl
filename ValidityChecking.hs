@@ -2,7 +2,6 @@ module ValidityChecking where
 
 import AST
 import PatExhaustiveness
-import ViewDetermination
 
 import Debug.Trace
 import qualified Data.Set as Set
@@ -83,3 +82,22 @@ goodNbSubInRules cons rules =
                    ((   goodNumberSub cons $ ps r)
                     && (goodNumberSub cons $ pv r)
                     && (goodNumberSub cons $ xpr r))) rules
+
+
+toStringp (Cons id vp) =
+  id ++ "(" ++ (List.intercalate "," $ map toStringp vp) ++ ")"
+toStringp (LAV _ p)    = toStringp p
+toStringp (Var s  )    = s
+
+
+toStringre (CRE id ve) =
+  id ++ "(" ++ (List.intercalate "," $ map toStringre ve) ++ ")"
+toStringre (VarRE s )  = s
+toStringre (FunRE name arg) =
+  name ++ "(" ++ arg ++ ")"
+
+toStringe (CE id ve) =
+  id ++ "(" ++ (List.intercalate "," $ map toStringe ve) ++ ")"
+toStringe (VarE s ) = s
+toStringe (Fun name arg1 arg2) =
+  name ++ "(" ++ arg1 ++ "," ++ arg2 ++ ")"

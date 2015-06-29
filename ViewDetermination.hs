@@ -5,6 +5,7 @@ import qualified Data.List as List
 import Debug.Trace
 
 import AST
+import ValidityChecking
 
 newVar = "ss'"
 
@@ -23,7 +24,8 @@ exprToPat (CE i xpl)  = Cons i $ map exprToPat xpl
 exprToPat (VarE s)    = Var s
 exprToPat (Fun _ _ _) = Var newVar
 
-patToRExpr s f (Cons i vp)        = CRE i $ map (patToRExpr s f) vp
+patToRExpr s f (Cons i vp)        =
+  CRE i $ map (patToRExpr s f) vp
 patToRExpr (Just s) f (LAV s1 _ ) =
   if s1 == s then FunRE f newVar
   else VarRE s1
@@ -79,21 +81,10 @@ rulesToCSIFile rrules =
   ++ "\n(RULES\n" ++
   (foldl (\str rr -> str ++
            "  " ++ (rn rr) ++ "("
-           ++ (toCSIp $ ip rr)
+           ++ (toStringp $ ip rr)
            ++ ") -> "
-           ++ (toCSIre $ op rr)
+           ++ (toStringre $ op rr)
            ++ "\n"
          ) "" rrules)
   ++ ")"
 
-toCSIp (Cons id vp) =
-  id ++ "(" ++ (List.intercalate "," $ map toCSIp vp) ++ ")"
-toCSIp (LAV _ p)    = toCSIp p
-toCSIp (Var s  )    = s
-
-
-toCSIre (CRE id ve)      =
-  id ++ "(" ++ (List.intercalate "," $ map toCSIre ve) ++ ")"
-toCSIre (VarRE s  )      = s
-toCSIre (FunRE name arg) =
-  name ++ "(" ++ arg ++ ")"

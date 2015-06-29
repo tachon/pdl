@@ -11,8 +11,10 @@ import AST
 import ValidityChecking
 import Example
 import ViewDetermination
+import SourceStability
 
 csiFile="singleValue.trs"
+citpFile="put.maude"
 
 constructors=cex
 rules=rex
@@ -37,10 +39,11 @@ main = do
     putStrLn "(Put s) is not injective"
     exitFailure
 
-  writeFile csiFile $ rulesToCSIFile
-    $ normalize $ reversedRules rex
+  let rrules = normalize $ reversedRules rules
+  writeFile csiFile $ rulesToCSIFile rrules
+
   (exitCode,stdo,stdr) <- readProcessWithExitCode
-                          "csi/csi.sh" [csiFile] ""
+                            "csi/csi.sh" [csiFile] ""
   case exitCode of
     ExitSuccess ->
       putStrLn "Rput Single-Valued............................ok"
@@ -49,3 +52,6 @@ main = do
                 ++ "\nCSI output :\n" ++ stdo
                 ++ "\nCSI errors :\n" ++ stdr)
       exitFailure
+  
+  writeFile citpFile $ writeCITPFiles constructors rules rrules  
+      

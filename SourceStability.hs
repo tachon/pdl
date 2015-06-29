@@ -7,6 +7,8 @@ import qualified Data.Map as Map
 import AST
 import Example
 import PatExhaustiveness
+import ValidityChecking
+
 
 writeBeginCITPFile constructors rules rrules  =
   "load ui\n\n(fmod PUT is\n" --PUT to be changed
@@ -19,10 +21,17 @@ writeBeginCITPFile constructors rules rrules  =
   ++ "\n" 
 
 
-{-writeCITPFile constructors rules rrules =
+write1CITPFile constructors rules rrules addedLemma goal =
   writeBeginCITPFile constructors rules rrules
   ++ addedLemma ++ "\nendfm)\n" ++ goal
--}
+
+writeCITPFiles constructors rules rrules =
+  write1CITPFile constructors rules rrules "" 
+  "(goal PUT |- eq pr(S:" ++
+  typeofExpr ++ ",S:" ++
+  typeofExpr ++ ") = S:" ++
+  typeofExpr ++ " ;)\n" ++ 
+  "(apply TC IP .)"
 
 allTypes constructors =
   unwords $ Set.toList $ foldl
@@ -61,12 +70,21 @@ writeVars vars =
 writeRules rules =
   "op " ++ (name $ head rules) ++ " : " ++ typeofPS ++ " " ++
   typeofPV ++ " -> " ++ typeofExpr ++ " .\n" ++
-  (unlines $ map (\r -> " eq " ++ show r ++ " .") rules)
+  (unlines $ map
+   (\r -> " eq " ++ (name r) ++ "(" 
+          ++ (toStringp $ ps r) ++ ","
+          ++ (toStringp $ pv r) ++ ") = "
+          ++ (toStringe $ xpr r) ++ " .")
+   rules)
 
 writeRRules rrules =
   " op " ++ (rn $ head rrules) ++ " : " ++ 
   typeofExpr ++ " -> " ++ typeofPV ++ " .\n" ++
-  (unlines $ map (\r -> " eq " ++ show r ++ " .") rrules)
+  (unlines $ map
+   (\rr -> " eq " ++ (rn rr) ++ "(" 
+          ++ (toStringp $ ip rr) ++ ") = "
+          ++ (toStringre $ op rr) ++ " .")
+   rrules)
 
 writeSSProperty rulesName rrulesName=
   " op pr : " ++
