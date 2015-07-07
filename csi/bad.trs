@@ -1,0 +1,5 @@
+(Var n)
+(RULES
+  Rbad(n) -> n
+  Rbad(S(n)) -> Rbad(n)
+)

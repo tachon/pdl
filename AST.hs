@@ -32,7 +32,7 @@ data C = C { idt :: ID,
 getC cl id = case List.find ((==) id . idt) cl of
    Just c -> c
    Nothing -> trace ("Constructor "++ show id
-                      ++ "does not exist")
+                      ++ " does not exist")
                C {idt="", typ="", sub = []}
 
 consOfType cl t = filter (\c -> typ c == t ) cl
@@ -41,7 +41,6 @@ arity c = length $ sub c
 
 ------------------------------------------------------------------
 
--- Pattern source
 data Pat = Cons ID [Pat]        
          | LAV String Pat  --lookahead variable
          | Var String deriving (Eq)

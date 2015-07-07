@@ -53,5 +53,5 @@ main = do
                 ++ "\nCSI errors :\n" ++ stdr)
       exitFailure
   
-  writeFile citpFile $ writeCITPFiles constructors rules rrules  
+  writeFile citpFile $ writeCITPFile constructors rules rrules  
       

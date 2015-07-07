@@ -1,6 +1,6 @@
-(VAR b ss' v)
+(VAR b ss1 v)
 (RULES
-  RputAs(emptyT()) -> emptyV()
-  RputAs(consT(A(v),ss')) -> consV(v,RputAs(ss'))
-  RputAs(consT(B(b),ss')) -> RputAs(ss')
+  RputAs(emptyT) -> emptyV
+  RputAs(consT(TagA(v),ss1)) -> consV(v,RputAs(ss1))
+  RputAs(consT(TagB(b),ss1)) -> RputAs(ss1)
 )

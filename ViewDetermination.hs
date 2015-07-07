@@ -7,7 +7,7 @@ import Debug.Trace
 import AST
 import ValidityChecking
 
-newVar = "ss'"
+newVar = "ss1"
 
 pvInXP rule =
   myError
@@ -62,6 +62,7 @@ doNothing r =
         Var s1 -> s1 == s2
         _      -> False
     _       -> False
+
 normalize rrules =
   filter (not . doNothing) (List.nub rrules)
   
