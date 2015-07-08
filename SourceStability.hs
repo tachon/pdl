@@ -26,11 +26,12 @@ data Goal = EQU  Int String String GoalPat
 debug = True
 
 writeCITPFile csts rules rrules =
-  writePUTmod csts rules rrules  ++
-  writeGoals csts rrules (name $ head rules) (rn $ head rrules)
+  let (s,n) = writeGoals csts rrules (name $ head rules)
+              (rn $ head rrules)
+  in (writePUTmod csts rules rrules ++ s, n)
   
 writePUTmod constructors rules rrules  =
-  "load ui\n\n(fmod PUT-0 is\n" --PUT to be changed
+  "(fmod PUT-0 is\n" --PUT to be changed
   ++ " sorts " ++ allTypes constructors ++ " .\n---\n"
   ++ writeConst constructors ++ "---\n"
   ++ writeVars (getAllVars constructors rules rrules) ++ "---\n"
@@ -107,7 +108,7 @@ writeSSProperty rulesName rrulesName=
 
 writeGoals csts rrules nameR nameRR =
   let lg = intermGoals csts rrules in
-  if null lg then "" else
+  if null lg then ("",0) else
     let (s1, n1) =
           foldl (
             \(s, n) gp ->
@@ -118,7 +119,7 @@ writeGoals csts rrules nameR nameRR =
             ++ applyTactics [SI,TC,IP,TC,IP]
             ++ createModule g (n+1) nameR nameRR , n+1)
             ) ("", 0) lg 
-    in s1 ++ (lastGoals n1 nameR nameRR)
+    in (s1 ++ (lastGoals n1 nameR nameRR), n1)
 
 lastGoals n nameR nameRR =
   let gp = VarG "S" typeofExpr True

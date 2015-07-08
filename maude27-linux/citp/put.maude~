@@ -1,0 +1,65 @@
+(fmod PUT-0 is
+ sorts Tag TagList Val ValList .
+---
+ op emptyT :  -> TagList [ctor] .
+ op emptyV :  -> ValList [ctor] .
+ op consT : Tag TagList -> TagList [ctor] .
+ op consV : Val ValList -> ValList [ctor] .
+ op TagA : Val -> Tag [ctor] .
+ op TagB : Val -> Tag [ctor] .
+---
+ vars ss ss1 x y : TagList .
+ vars a b v : Val .
+ vars vs : ValList .
+---
+ op putAs : TagList ValList -> TagList .
+ eq putAs(emptyT,emptyV) = emptyT .
+ eq putAs(emptyT,consV(v,vs)) = consT(TagA(v),putAs(emptyT,vs)) .
+ eq putAs(consT(TagA(a),ss),emptyV) = putAs(ss,emptyV) .
+ eq putAs(consT(TagA(a),ss),consV(v,vs)) = consT(TagA(v),putAs(ss,vs)) .
+ eq putAs(consT(TagB(b),ss),vs) = consT(TagB(b),putAs(ss,vs)) .
+
+ op RputAs : TagList -> ValList .
+ eq RputAs(emptyT) = emptyV .
+ eq RputAs(consT(TagA(v),ss1)) = consV(v,RputAs(ss1)) .
+ eq RputAs(consT(TagB(b),ss1)) = RputAs(ss1) .
+
+ op pr : TagList TagList -> TagList .
+ eq pr(x,y) = putAs(x,RputAs(y)) .
+
+endfm)
+
+(goal PUT-0 |- ceq putAs(consT(var2:Tag,ss1:TagList),RputAs(consT(var2:Tag,ss1:TagList))) = consT(var2:Tag,ss1:TagList)
+	if putAs(ss1:TagList,RputAs(ss1:TagList)) = ss1:TagList ;)
+(set ind on var2:Tag .)
+(apply SI TC IP TC IP .)
+
+
+(fmod PUT-1 is
+ inc PUT-0 .
+----
+ vars ss1 : TagList .
+ vars var2 : Tag .
+---
+ ceq putAs(consT(var2,ss1),RputAs(consT(var2,ss1))) = consT(var2,ss1)
+	if putAs(ss1,RputAs(ss1)) = ss1 .
+endfm)
+
+(goal PUT-1 |- eq putAs(S:TagList,RputAs(S:TagList)) = S:TagList ;)
+(set ind on S:TagList .)
+(apply SI IP .)
+
+
+(fmod PUT-2 is
+ inc PUT-1 .
+ inc PUT-0 .
+----
+ vars S : TagList .
+---
+ eq pr(S,S) = S .
+endfm)
+
+(goal PUT-2 |- eq pr(S:TagList,S:TagList) = S:TagList ;)
+(apply TC IP .)
+
+
