@@ -28,7 +28,12 @@ data C = C { idt :: ID,
              sub :: [Tip] 
            } deriving (Show, Eq, Ord)
 
-       
+
+data TypeofPat = ToP { typeofPS :: Tip,
+                       typeofPV :: Tip,
+                       typeofExpr :: Tip
+                     }
+
 getC cl id = case List.find ((==) id . idt) cl of
    Just c -> c
    Nothing -> trace ("Constructor "++ show id
