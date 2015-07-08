@@ -1,0 +1,4 @@
+(VAR b v)
+(RULES
+  RupdFst(pair(v,b)) -> v
+)

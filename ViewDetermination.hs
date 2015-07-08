@@ -32,6 +32,8 @@ patToRExpr (Just s) f (LAV s1 _ ) =
 patToRExpr (Just s) f (Var s1   ) =
   if s1 == s then FunRE f newVar
   else VarRE s1
+patToRExpr Nothing f (LAV s1 _ ) = VarRE s1
+patToRExpr Nothing f (Var s1   ) = VarRE s1
 
 nameOfPV (VarE s)    = Nothing
 nameOfPV (Fun _ _ s) = Just s

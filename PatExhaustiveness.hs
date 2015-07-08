@@ -146,12 +146,12 @@ findNEC cons m n (c:v) =
 wellTyped cons rules =
   and $ map (
     \r ->
-    let (b1, env1) = (patWellTyped cons typeofPS (ps r) Map.empty)
-        (b2, env2) = (patWellTyped cons typeofPV (pv r) Map.empty)
+    let (b1, env1) = (patWellTyped cons (typeofPS typeofP) (ps r) Map.empty)
+        (b2, env2) = (patWellTyped cons (typeofPV typeofP) (pv r) Map.empty)
     in  (myError ("in source Pattern of rule :\n" ++ show r) b1)
         && (myError ("in view Pattern of rule :\n" ++ show r) b2)
         && (myError ("in right hand side of rule :\n" ++ show r)
-         (exprWellTyped cons typeofExpr (xpr r)
+         (exprWellTyped cons (typeofExpr typeofP) (xpr r)
           (Map.union env1 env2)))
     ) rules 
 
@@ -177,23 +177,23 @@ patWellTyped cons t (Cons i vp) env =
 
 exprWellTyped _ t (Fun n v1 v2) env =
   (myError ("This function call " ++ show (Fun n v1 v2)
-            ++ " \tis of type " ++ show typeofExpr
+            ++ " \tis of type " ++ show (typeofExpr typeofP)
             ++ " but is supposed to be of type " ++ show t)
-   (t == typeofExpr))
+   (t == (typeofExpr typeofP)))
   && Map.member v1 env &&
   let t1 = env Map.! v1 in
   (myError ("The variable " ++ show v1
             ++ " in function call " ++ show (Fun n v1 v2)
             ++ " \tis of type " ++ show t1
-            ++ " but is supposed to be of type " ++ show typeofPS)
-   (t1 == typeofPS))
+            ++ " but is supposed to be of type " ++ show (typeofPS typeofP))
+   (t1 == (typeofPS typeofP)))
   && Map.member v2 env &&
   let t1 = env Map.! v2 in
   (myError ("The variable " ++ show v2
             ++ " in function call " ++ show (Fun n v1 v2)
             ++ " \tis of type " ++ show t1
-            ++ " but is supposed to be of type " ++ show typeofPV)
-   (t1 == typeofPV))
+            ++ " but is supposed to be of type " ++ show (typeofPV typeofP))
+   (t1 == (typeofPV typeofP)))
   
 exprWellTyped _ t (VarE v) env  =
   Map.member v env &&

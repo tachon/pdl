@@ -23,8 +23,8 @@ csiFile="singleValue.trs"
 citpFile="maude27-linux/citp/put.maude"
 maudeResFile="maude.txt"
 
-constructors=cex
-rules=rex
+constructors=cex1
+rules=rex1
 
 main = do
 

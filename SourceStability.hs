@@ -55,19 +55,19 @@ writeConst constructors=
 getAllVars cons rules rrules =
   foldl (
     \map r -> 
-    let (_,map1) = patWellTyped cons typeofPS (ps r) Map.empty
-        (_,map2) = patWellTyped cons typeofPV (pv r) map1
+    let (_,map1) = patWellTyped cons (typeofPS typeofP) (ps r) Map.empty
+        (_,map2) = patWellTyped cons (typeofPV typeofP) (pv r) map1
         --hoping same name -> same type : to be checked 
     in Map.union map map2
     ) Map.empty rules
   `Map.union`
   foldl (
     \map r -> 
-    let (_,map1) = patWellTyped cons typeofExpr (ip r) map 
+    let (_,map1) = patWellTyped cons (typeofExpr typeofP) (ip r) map 
     in Map.union map map1
     ) Map.empty rrules 
   `Map.union`
-  (Map.fromList [("x",typeofExpr), ("y",typeofExpr)])
+  (Map.fromList [("x1",(typeofExpr typeofP)), ("y1",(typeofExpr typeofP))])
 
 writeVars vars =
   Map.foldWithKey
@@ -77,8 +77,8 @@ writeVars vars =
   (\v t m -> Map.insertWith (++) t [v] m) Map.empty vars)
 
 writeRules rules =
-  " op " ++ (name $ head rules) ++ " : " ++ typeofPS ++ " " ++
-  typeofPV ++ " -> " ++ typeofExpr ++ " .\n" ++
+  " op " ++ (name $ head rules) ++ " : " ++ (typeofPS typeofP) ++ " " ++
+  (typeofPV typeofP) ++ " -> " ++ (typeofExpr typeofP) ++ " .\n" ++
   (unlines $ map
    (\r ->
      let env = getLAV r in
@@ -90,7 +90,7 @@ writeRules rules =
 
 writeRRules rrules =
   " op " ++ (rn $ head rrules) ++ " : " ++ 
-  typeofExpr ++ " -> " ++ typeofPV ++ " .\n" ++
+  (typeofExpr typeofP) ++ " -> " ++ (typeofPV typeofP) ++ " .\n" ++
   (unlines $ map
    (\rr -> " eq " ++ (rn rr) ++ "(" 
           ++ (toStringp $ ip rr) ++ ") = "
@@ -99,16 +99,16 @@ writeRRules rrules =
 
 writeSSProperty rulesName rrulesName=
   " op pr : " ++
-  typeofExpr ++ " " ++
-  typeofExpr ++ " -> " ++
-  typeofExpr ++ " .\n" ++
-  " eq pr(x,y) = " ++ rulesName ++
-  "(x," ++ rrulesName ++ "(y)) .\n"
+  (typeofExpr typeofP) ++ " " ++
+  (typeofExpr typeofP) ++ " -> " ++
+  (typeofExpr typeofP) ++ " .\n" ++
+  " eq pr(x1,y1) = " ++ rulesName ++
+  "(x1," ++ rrulesName ++ "(y1)) .\n"
 
 
 writeGoals csts rrules nameR nameRR =
   let lg = intermGoals csts rrules in
-  if null lg then ("",0) else
+  if null lg then ((lastGoals 0 nameR nameRR),0) else
     let (s1, n1) =
           foldl (
             \(s, n) gp ->
@@ -116,21 +116,29 @@ writeGoals csts rrules nameR nameRR =
                 g = CEQ n nameR nameRR gp1 gpIH
             in (s ++ show g 
             ++ writeInd gp1
-            ++ applyTactics [SI,TC,IP,TC,IP]
+            ++ (applyTactics $ findTactics csts gp1)
             ++ createModule g (n+1) nameR nameRR , n+1)
             ) ("", 0) lg 
     in (s1 ++ (lastGoals n1 nameR nameRR), n1)
 
 lastGoals n nameR nameRR =
-  let gp = VarG "S" typeofExpr True
-      g  = PR (n+1) typeofExpr
+  let gp = VarG "S" (typeofExpr typeofP) True
+      g1 = EQU n nameR nameRR gp 
+      g2 = PR (n+1) (typeofExpr typeofP)
   in
-  show (EQU n nameR nameRR gp) ++
+  show g1 ++
   writeInd gp ++
   applyTactics [SI, IP] ++
-  createModule g (n+1) nameR nameRR ++
-  show g ++ applyTactics [TC, IP]
+  createModule g1 (n+1) nameR nameRR ++
+  show g2 ++ applyTactics [TC, IP]
   
+findTactics csts (ConsG id lg) =
+  concat $ map (findTactics csts) lg
+  
+findTactics csts (VarG _ t b) =
+  if not b then []
+  else let n = List.length $ consOfType csts t in
+  SI : (concat $ take n $ repeat [TC,IP,TC])
 
 writeInd g =
   (Set.foldl (\s (v,t) -> s ++ " " ++ v ++ ":" ++ t) 
@@ -171,7 +179,7 @@ findVarIH g rrules cons =
   case List.find ((matchGP g) . ip) rrules of 
     Nothing -> Nothing
     Just rr ->
-      let (_, env) = patWellTyped cons typeofExpr (ip rr) Map.empty
+      let (_, env) = patWellTyped cons (typeofExpr typeofP) (ip rr) Map.empty
       in case findRecVar (op rr) of
         Nothing -> Nothing
         Just v  -> Just (putVarInGP g (ip rr) v,
@@ -232,7 +240,7 @@ constructGoals csts d p =
   constructGoal csts "var1" d p : constructGoals csts (d-1) p 
 
 constructGoal csts v d (LAV _ p)    = constructGoal csts v d p
-constructGoal csts v d (Var _)      = VarG v typeofExpr True
+constructGoal csts v d (Var _)      = VarG v (typeofExpr typeofP) True
 constructGoal csts v d (Cons id lp) =
   let c = getC csts id in
   if d == 1 then (VarG v (typ c) True)

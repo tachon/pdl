@@ -8,7 +8,7 @@
  op TagA : Val -> Tag [ctor] .
  op TagB : Val -> Tag [ctor] .
 ---
- vars ss ss1 x y : TagList .
+ vars ss ss1 x1 y1 : TagList .
  vars a b v : Val .
  vars vs : ValList .
 ---
@@ -25,14 +25,14 @@
  eq RputAs(consT(TagB(b),ss1)) = RputAs(ss1) .
 
  op pr : TagList TagList -> TagList .
- eq pr(x,y) = putAs(x,RputAs(y)) .
+ eq pr(x1,y1) = putAs(x1,RputAs(y1)) .
 
 endfm)
 
 (goal PUT-0 |- ceq putAs(consT(var2:Tag,ss1:TagList),RputAs(consT(var2:Tag,ss1:TagList))) = consT(var2:Tag,ss1:TagList)
 	if putAs(ss1:TagList,RputAs(ss1:TagList)) = ss1:TagList ;)
 (set ind on var2:Tag .)
-(apply SI TC IP TC IP .)
+(apply SI TC IP TC TC IP TC .)
 
 
 (fmod PUT-1 is
@@ -56,7 +56,7 @@ endfm)
 ----
  vars S : TagList .
 ---
- eq pr(S,S) = S .
+ eq putAs(S,RputAs(S)) = S .
 endfm)
 
 (goal PUT-2 |- eq pr(S:TagList,S:TagList) = S:TagList ;)

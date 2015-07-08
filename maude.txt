@@ -3,7 +3,7 @@
 		     /||||||||||||||||||\
 	    Maude 2.7 built: Mar  3 2014 18:04:05
 	    Copyright 1997-2014 SRI International
-		   Wed Jul  8 14:31:27 2015
+		   Wed Jul  8 17:07:00 2015
 
 	    Full Maude 2.6.1e July 13th 2012
 
