@@ -23,8 +23,8 @@ csiFile="singleValue.trs"
 citpFile="maude27-linux/citp/put.maude"
 maudeResFile="maude.txt"
 
-constructors=cex1
-rules=rex1
+constructors=cex6
+rules=rex6
 
 main = do
 
@@ -51,15 +51,16 @@ main = do
 
   (exitCode,stdo,stdr) <- readProcessWithExitCode
                             "csi/csi.sh" [csiFile] ""
-  case exitCode of
-    ExitSuccess ->
-      putStrLn "Rput Single-Valued............................ok"
-    _ -> do
+
+  if (head $ lines stdo) == "YES" then
+    putStrLn "Rput Single-Valued............................ok"
+    else
+    do
       putStrLn ("The reverse rule is found not confluent by CSI"
-                ++ "\nCSI output :\n" ++ stdo
-                ++ "\nCSI errors :\n" ++ stdr)
-      --exitFailuremaudeCmd
-  
+                ++ "\nCSI output :\n" ++ stdo)
+      exitFailure
+      
+    
   let (s,n) = writeCITPFile constructors rules rrules  
 
   writeFile citpFile s
@@ -81,7 +82,8 @@ main = do
   if n == (nbProof res) - 2 then
     putStrLn "Source Stability..............................ok"
     else do
-    putStrLn "Source Stability not true."
+    putStrLn ("Source Stability not true : only " ++ (show $ nbProof res)
+              ++ "/" ++ show (n+2) ++ " goals proved.")
     exitFailure
 
   

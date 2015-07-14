@@ -1,5 +1,6 @@
 module SourceStability where
 
+import Control.Monad.State
 import qualified Data.Set as Set
 import qualified Data.List as List
 import qualified Data.Map as Map
@@ -16,7 +17,7 @@ data Tactics = SI | CA | TC | IP | CS | RD | AUTO
 type Ind = Bool
 
 data GoalPat = ConsG ID [GoalPat]
-             | VarG String Tip Ind
+             | VarG String Tip Ind deriving(Eq, Ord)
 
 
 data Goal = EQU  Int String String GoalPat
@@ -111,12 +112,12 @@ writeGoals csts rrules nameR nameRR =
   if null lg then ((lastGoals 0 nameR nameRR),0) else
     let (s1, n1) =
           foldl (
-            \(s, n) gp ->
-            let Just (gp1, gpIH) = findVarIH gp rrules csts
-                g = CEQ n nameR nameRR gp1 gpIH
+            \(s, n) (gp,gpIH) ->
+            ---let Just (gp1, gpIH) = findVarIH gp rrules csts
+            let g = CEQ n nameR nameRR gp gpIH
             in (s ++ show g 
-            ++ writeInd gp1
-            ++ (applyTactics $ findTactics csts gp1)
+            ++ writeInd gp
+            ++ (applyTactics $ findTactics csts gp)
             ++ createModule g (n+1) nameR nameRR , n+1)
             ) ("", 0) lg 
     in (s1 ++ (lastGoals n1 nameR nameRR), n1)
@@ -219,6 +220,7 @@ applyTactics lt =
   foldl(\s tct -> s ++ show tct ++ " ") "(apply " lt
   ++ ".)\n\n\n"
 
+{-
 intermGoals constructors rrules =
   let (p,d) = foldl(\(p1,d1) rr ->
                       let d2 = depth rr in
@@ -227,6 +229,7 @@ intermGoals constructors rrules =
                     ) (Var "", -1) rrules in
   if d < 2 then []
   else constructGoals constructors (d-1) p
+-}
 
 depth rr = depthIP 0 $ ip rr
   
@@ -235,9 +238,10 @@ depthIP n (Cons id lp) = maximum $ map (depthIP (n+1)) lp
 depthIP n (LAV _ p)    = depthIP n p
 depthIP n (Var _)      = n + 1
 
+{-
 constructGoals csts d p =
   if d == 1 then [] else
-  constructGoal csts "var1" d p : constructGoals csts (d-1) p 
+  constructGoal csts initV d p : constructGoals csts (d-1) p 
 
 constructGoal csts v d (LAV _ p)    = constructGoal csts v d p
 constructGoal csts v d (Var _)      = VarG v (typeofExpr typeofP) True
@@ -254,18 +258,25 @@ constructGoal csts v d (Cons id lp) =
                       (constructGoal csts (v1) (d-1) p):lg1)
            ) (v, length lp, []) lp)
     in ConsG id lg
+-}
+
+initV  = "var1"
+incr s = let i = read (drop 3 s) :: Int
+         in (take 3 s) ++ (show (i+1))
+suc (n,m) s =
+  let lmp = take (n+1) $ iterate (m*) 1
+      un  = read (drop 3 s) :: Integer
+      res = (sum lmp) + (un - (sum $ init lmp)) * m 
+  in  "var" ++ show res
 
 
-suc s = let i = read (drop 3 s) :: Int in
-  (take 3 s) ++ (show (i+1))
-
-showGoalPat p = toStringp $ toPat p
+showGoalPat p       = toStringp $ toPat p
 toPat (ConsG id lg) = (Cons id (map toPat lg))
-toPat (VarG s t _)    = Var (s ++ ":" ++ t)
+toPat (VarG s t _)  = Var (s ++ ":" ++ t)
 
 showLemmaPat p = toStringp $ toLemma p
 toLemma (ConsG id lg) = (Cons id (map toLemma lg))
-toLemma (VarG s t _)  = (Var s)
+toLemma (VarG s _ _)  = (Var s)
 
 instance Show Tactics where
   show AUTO = "auto"
@@ -316,6 +327,95 @@ showLemma (PR _ _)= " eq pr(S,S) = S .\nendfm)\n\n"
 
 
 
+intermGoals constructors rrules =
+  let m  = maximum $ map (length . sub) constructors
+      lg = Set.toList $
+           foldl
+           (\set rr ->
+             case (patternIH (op rr)) of
+               Nothing -> set
+               Just s  ->
+                 let pp = parentPattern
+                          constructors
+                          s
+                          (0, toInteger m)
+                          initV
+                          (typeofExpr typeofP)
+                          (ip rr)
+                 in
+                  Set.insert
+                  (pp, VarG s (typeofPS typeofP) False) set
+           ) (Set.empty) rrules
+  in lg ++
+     foldl (\acc (pp, (VarG s _ _)) ->
+             (reverse (pToIH constructors s m pp)) ++ acc
+           ) [] lg
+
+pToIH csts s m pp =
+  let pp1 = parentPattern
+            csts
+            s
+            (0, toInteger m)
+            initV
+            (typeofExpr typeofP)
+            (toLemma pp)
+  in case pp1 of
+    (VarG _ _ _) -> []
+    pp1          ->
+      (pp1, VarG s (typeofPS typeofP) False) :
+      (pToIH csts s m pp1)
+
+  
+patternIH (VarRE _)   = Nothing
+patternIH (FunRE _ s) = Just s
+patternIH (CRE id lp) =
+  let l = filter (\p -> case p of
+                     Nothing -> False
+                     Just _ -> True)
+          $ map patternIH lp
+  in if null l then Nothing else head l
+
+parentPattern _ s1 _ svar t (Var s) =
+  if s == s1 then VarG s t False else VarG svar t False
+parentPattern csts s1 (n,m) svar t (Cons id lp) =
+  if and $ map (\p -> case p of
+                   Var _ -> True
+                   _     -> False) lp
+  then VarG svar t True 
+  else
+    let tsub = (sub $ getC csts id)
+        sv1  = suc (n,m) svar in
+    ConsG id (zipWith3 (parentPattern csts s1 (n+1,m))
+              (iterate incr sv1) tsub lp)
+
+
+
+  {-
+for each RRules (not BC):
+- I make a map of (GoalPat, GoalPat) * INT
+- fst is the direct parent of pattern
+  - parent : pattern where leaf cons is replaced by a var (ind = True)
+  - cons are leaf when all his sub are var or no sub (arity=0)
+- snd is the pattern HI
+- (use an upper bound (nb rr) to know nb of tactics)
+
+I construct from fst to root :
+with each father -> son
+-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -350,6 +450,15 @@ showLemma (PR _ _)= " eq pr(S,S) = S .\nendfm)\n\n"
      /   \
     / / \ \
    /_/   \_\
-    
+
+   ____
+  (-__-)
+  *-||-*
+   _/\_
+
+   ____              (-__-)                
+  (-__-)           .___||
+    ||<@========>       >
+   _/\_
 
 -}
