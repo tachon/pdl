@@ -172,9 +172,9 @@ getGoalVars (PR _ t)            =
   Map.singleton t (Set.singleton "S")
 
 writeInclude n =
-  if n <= 0 then " inc PUT-0 .\n----\n" else
-    " inc PUT-" ++ show n ++ " .\n" ++
-    writeInclude (n-1)
+--  if n <= 0 then " inc PUT-0 .\n----\n" else
+    " inc PUT-" ++ show n ++ " .\n----\n"
+--    ++ writeInclude (n-1)
 
 findVarIH g rrules cons =
   case List.find ((matchGP g) . ip) rrules of 

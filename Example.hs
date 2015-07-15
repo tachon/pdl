@@ -138,7 +138,7 @@ rex5 = [Rule {name="putInvalid",
 
 
 
-typeofP = ToP {
+typeofP6 = ToP {
   typeofPS   = "SsList",
   typeofPV   = "VsList",
   typeofExpr = "SsList"
@@ -245,10 +245,87 @@ keep students who got A in second discipline
 -}
 
 
+------------------------------------------------------------------
 
+typeofP = ToP {
+  typeofPS   = "NameList",
+  typeofPV   = "Number",
+  typeofExpr = "NameList"
+}
 
+cex7 = [ C { idt="a", typ="Char", sub = []},
+         C { idt="b", typ="Char", sub = []},
+         C { idt="c", typ="Char", sub = []},
+         C { idt="d", typ="Char", sub = []},
+         C { idt="e", typ="Char", sub = []},
+         C { idt="f", typ="Char", sub = []},
+         C { idt="g", typ="Char", sub = []},
+         C { idt="h", typ="Char", sub = []},
+         C { idt="i", typ="Char", sub = []},
+         C { idt="j", typ="Char", sub = []},
+         C { idt="k", typ="Char", sub = []},
+         C { idt="l", typ="Char", sub = []},
+         C { idt="m", typ="Char", sub = []},
+         C { idt="n", typ="Char", sub = []},
+         C { idt="o", typ="Char", sub = []},
+         C { idt="p", typ="Char", sub = []},
+         C { idt="q", typ="Char", sub = []},
+         C { idt="r", typ="Char", sub = []},
+         C { idt="s", typ="Char", sub = []},
+         C { idt="t", typ="Char", sub = []},
+         C { idt="u", typ="Char", sub = []},
+         C { idt="v", typ="Char", sub = []},
+         C { idt="w", typ="Char", sub = []},
+         C { idt="x", typ="Char", sub = []},
+         C { idt="y", typ="Char", sub = []},
+         C { idt="z", typ="Char", sub = []},
+         
+         C { idt="sglS" , typ="String", sub=["Char"]},
+         C { idt="consS", typ="String", sub=["Char", "String"]},
 
+         C { idt="toto" ,  typ="Name", sub=[]},
+         C { idt="nototo", typ="Name", sub=["String"]},
 
+         C { idt="noName",typ="NameList", sub=[]},
+         C { idt="consLN",typ="NameList", sub=["Name","NameList"]},
+    
+         C { idt="zero", typ="Number", sub=[]},
+         C { idt="succ", typ="Number", sub=["Number"]}
+       ]
+
+         
+rex7 = [
+  Rule {name="nbtoto",
+        ps  =(Cons "noName" []),
+        pv  =(Cons "zero" []),
+        xpr =(CE "noName" [])
+       },
+  
+  Rule {name="nbtoto",
+        ps  =(Cons "consLN" [Cons "toto" [], Var "ss"]),
+        pv  =(Cons "succ" [Var "vs"]),
+        xpr =(CE "consLN" [CE "toto" [], Fun "nbtoto" "ss" "vs"])
+       },    
+
+  Rule {name="nbtoto",
+        ps  =(LAV "ss" (Cons "noName" [])),
+        pv  =(Cons "succ" [Var "vs"]),
+        xpr =(CE "consLN" [CE "toto" [], Fun "nbtoto" "ss" "vs"])
+       },    
+
+  Rule {name="nbtoto",
+        ps  =(Cons "consLN" [Cons "toto" [], Var "ss"]),
+        pv  =(LAV "vs" (Cons "zero" [])),
+        xpr =(Fun "nbtoto" "ss" "vs")
+       },    
+
+  Rule {name="nbtoto",
+        ps  =(Cons "consLN" [Cons "nototo" [Var "n"], Var "ss"]),
+        pv  =(Var "vs"),
+        xpr =(CE "consLN" [CE "nototo" [VarE "n"],
+                           Fun "nbtoto" "ss" "vs"])
+       }
+  ]
 
 
 
