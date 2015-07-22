@@ -14,6 +14,16 @@ instance Show P where
   show Wildcard = "_"
   show( Cst i pl) = "C " ++ show i ++ " " ++ show pl
 
+totalityChecking funs cons rules =
+  wellTyped funs cons rules &&
+  --allRulesUsefull cons rules &&
+  case i cons (ruleToMat rules) 2 of
+    Nothing -> True
+    Just p  -> trace ("Pattern not exhaustive \n"
+                      ++ "This pattern is not represented :\n"
+                      ++ (showPsPv p))
+               False
+
 verifyInvariant [] [] value =
   mytrace "m and v empty" value
 verifyInvariant m v value =
@@ -143,22 +153,25 @@ findNEC cons m n (c:v) =
       Just $ (Cst (idt c) h) : t
 
 
-wellTyped cons rules =
-  and $ map (
-    \r ->
-    let (b1, env1) = (patWellTyped cons (typeofPS typeofP) (ps r) Map.empty)
-        (b2, env2) = (patWellTyped cons (typeofPV typeofP) (pv r) Map.empty)
-    in  (myError ("in source Pattern of rule :\n" ++ show r) b1)
-        && (myError ("in view Pattern of rule :\n" ++ show r) b2)
-        && (myError ("in right hand side of rule :\n" ++ show r)
-         (exprWellTyped cons (typeofExpr typeofP) (xpr r)
-          (Map.union env1 env2)))
-    ) rules 
+wellTyped funs cons rules =
+  Map.foldWithKey
+  (\f rofs b ->
+    and $ map (
+      \r ->
+      let (b1, env1) =
+            (patWellTyped cons (tps f) (ps r) Map.empty)
+          (b2, env2) =
+            (patWellTyped cons (tpv f) (pv r) Map.empty)
+      in (myError ("in source Pattern of rule :\n" ++ show r) b1)
+         && (myError ("in view Pattern of rule :\n" ++ show r) b2)
+         && (myError ("in right hand side of rule :\n" ++ show r)
+             (exprWellTyped cons f (txp f) (xpr r)
+              (Map.union env1 env2)))
+      ) rules 
+  ) True (rulesOfFuns funs rules) 
 
-
-patWellTyped _ t (Var s) env        = (True, Map.insert s t env)
-patWellTyped cons t (LAV s p) env   =
-  patWellTyped cons t p (Map.insert s t env)
+patWellTyped _    t (Var s)     env = (True, Map.insert s t env)
+patWellTyped cons t (LAV s p)   env = (True, Map.insert s t env)
 patWellTyped cons t (Cons i vp) env =
   let c = getC cons i
       b = (myError ("This pattern : " ++ show (Cons i vp)
@@ -175,45 +188,57 @@ patWellTyped cons t (Cons i vp) env =
 --                    patWellTyped cons t1 p1) (zip (sub c) vp))
 
 
-exprWellTyped _ t (Fun n v1 v2) env =
+exprWellTyped _ f t (Fun n v1 v2) env =
   (myError ("This function call " ++ show (Fun n v1 v2)
-            ++ " \tis of type " ++ show (typeofExpr typeofP)
-            ++ " but is supposed to be of type " ++ show t)
-   (t == (typeofExpr typeofP)))
+            ++ " \tis of type " ++ show t
+            ++ " but is supposed to be of type "
+            ++ show (txp f))
+   (t == (txp f)))
   && Map.member v1 env &&
   let t1 = env Map.! v1 in
   (myError ("The variable " ++ show v1
             ++ " in function call " ++ show (Fun n v1 v2)
             ++ " \tis of type " ++ show t1
-            ++ " but is supposed to be of type " ++ show (typeofPS typeofP))
-   (t1 == (typeofPS typeofP)))
+            ++ " but is supposed to be of type "
+            ++ show (tps f))
+   (t1 == (tps f)))
   && Map.member v2 env &&
   let t1 = env Map.! v2 in
   (myError ("The variable " ++ show v2
             ++ " in function call " ++ show (Fun n v1 v2)
             ++ " \tis of type " ++ show t1
-            ++ " but is supposed to be of type " ++ show (typeofPV typeofP))
-   (t1 == (typeofPV typeofP)))
+            ++ " but is supposed to be of type "
+            ++ show (tpv f))
+   (t1 == (tpv f)))
   
-exprWellTyped _ t (VarE v) env  =
-  Map.member v env &&
+exprWellTyped _ _ t (VarE v) env =
   let t1 = env Map.! v in
+  (myError ("The variable " ++ show v
+            ++ " does not exist in left side"
+            ++ " (or is looked-ahead by another variable)")
+   (Map.member v env)) &&
   (myError ("The variable " ++ show v
             ++ " \tis of type " ++ show t1
             ++ " but is supposed to be of type " ++ show t)
    (t1 == t))
 
-exprWellTyped cons t (CE i vp) env =
+exprWellTyped cons f t (CE i vp) env =
   let c = getC cons i
   in (myError ("This expression : " ++ show (CE i vp)
                ++ " \tis of type " ++ show (typ c)
                ++ " but is supposed to be of type " ++ show t)
       (t == typ c)) &&
      (and $ map(\(t1, p1) ->
-                 exprWellTyped cons t1 p1 env) (zip (sub c) vp))
+                 exprWellTyped cons f t1 p1 env) (zip (sub c) vp))
 
 
 
 showPsPv [a,b] = "F   (" ++ show a ++ ")   ("
                  ++ show b ++ ")  =  e"
 showPsPv l     = show l
+
+rulesOfFuns funs rules =
+  foldl (\map f ->
+          Map.insert f
+          (filter ((fName f ==) . name) rules)
+          map) Map.empty funs
