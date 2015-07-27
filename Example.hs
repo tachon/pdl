@@ -1,51 +1,58 @@
 module Example where
 import AST
 
-typeofP1 = ToP {
-  typeofPS   = "TagList",
-  typeofPV   = "ValList",
-  typeofExpr = "TagList"
-}
-               
-cex1 = [ C { idt="emptyT", typ="TagList", sub = []},
-        C { idt="emptyV", typ="ValList", sub = []},
-        
-        C { idt="consT", typ="TagList", sub = ["Tag", "TagList"]},
-        C { idt="consV", typ="ValList", sub = ["Val", "ValList"]}, 
+ipt1 = I {
+  funs=[F {
+           fName = "putAs",
+           tps   = "TagList",
+           tpv   = "ValList",
+           txp   = "TagList"
+          }
+       ],
 
-        C { idt="TagA",  typ="Tag",  sub = ["Val"]},        
-        C { idt="TagB",  typ="Tag",  sub = ["Val"]}]        
-      
+  ctrs=[
+    C { idt="emptyT", typ="TagList", sub = []},
+    C { idt="emptyV", typ="ValList", sub = []},
+         
+    C { idt="consT", typ="TagList", sub = ["Tag", "TagList"]},
+    C { idt="consV", typ="ValList", sub = ["Val", "ValList"]}, 
 
-
-rex1 = [Rule {name="putAs",
-             ps  =(Cons "emptyT" []), pv =(Cons "emptyV" []),
-             xpr =(CE "emptyT" [])},
-     
-       Rule {name="putAs",
-             ps  =(LAV "ss" (Cons "emptyT" [])),
-             pv  =(Cons "consV" [(Var "v"), (Var "vs")]),
-             xpr =(CE "consT" [CE "TagA" [(VarE "v")],
+    C { idt="TagA",  typ="Tag",  sub = ["Val"]},        
+    C { idt="TagB",  typ="Tag",  sub = ["Val"]}
+    ],
+  
+  rls = [
+    Rule {name="putAs",
+          ps  =(Cons "emptyT" []), pv =(Cons "emptyV" []),
+          xpr =(CE "emptyT" [])},
+    
+    Rule {name="putAs",
+          ps  =(LAV "ss" (Cons "emptyT" [])),
+          pv  =(Cons "consV" [(Var "v"), (Var "vs")]),
+          xpr =(CE "consT" [CE "TagA" [(VarE "v")],
                             (Fun "putAs" "ss" "vs")])},
        
-       Rule {name="putAs",
-             ps  =(Cons "consT" [(Cons "TagA" [(Var "a")]), (Var "ss")]),
-             pv  =(LAV "vs" (Cons "emptyV" [])),
-             xpr =(Fun "putAs" "ss" "vs")},
+    Rule {name="putAs",
+          ps  =(Cons "consT" [(Cons "TagA" [(Var "a")]),
+                              (Var "ss")]),
+          pv  =(LAV "vs" (Cons "emptyV" [])),
+          xpr =(Fun "putAs" "ss" "vs")},
        
-       Rule {name="putAs",
-             ps  =(Cons "consT" [(Cons "TagA" [(Var "a")]), (Var "ss")]),
-             pv  =(Cons "consV" [(Var "v"), (Var "vs")]),
-             xpr =(CE "consT" [CE "TagA" [(VarE "v")],
-                         (Fun "putAs" "ss" "vs")])},
+    Rule {name="putAs",
+          ps  =(Cons "consT" [(Cons "TagA" [(Var "a")]),
+                              (Var "ss")]),
+          pv  =(Cons "consV" [(Var "v"), (Var "vs")]),
+          xpr =(CE "consT" [CE "TagA" [(VarE "v")],
+                            (Fun "putAs" "ss" "vs")])},
        
-       Rule {name="putAs",
-             ps  =(Cons "consT" [(Cons "TagB" [(Var "b")]), (Var "ss")]),
-             pv  =(Var "vs"),
-             xpr =(CE "consT" [CE "TagB" [(VarE "b")],
-                         (Fun "putAs" "ss" "vs")])}       
-      ]
-      
+    Rule {name="putAs",
+          ps  =(Cons "consT" [(Cons "TagB" [(Var "b")]),
+                              (Var "ss")]),
+          pv  =(Var "vs"),
+          xpr =(CE "consT" [CE "TagB" [(VarE "b")],
+                            (Fun "putAs" "ss" "vs")])}       
+    ]
+  }
 rex11 = [Rule {name="putAs",
               ps  =(Var "s"),
               pv  =(Var "v"),
@@ -55,111 +62,124 @@ rex11 = [Rule {name="putAs",
 ---------------------------------------------------------------------
 --updFirst
 
-typeofP2 = ToP {
-  typeofPS   = "Pair",
-  typeofPV   = "Val",
-  typeofExpr = "Pair"
-}
+ipt2 = I {
+  funs=[F {
+           fName = "updFirst",
+           tps   = "Pair",
+           tpv   = "Val",
+           txp   = "Pair"
+          }
+       ],
+       
+  ctrs = [ C { idt="pair", typ="Pair", sub = ["Val", "Val"]}],
 
-cex2 = [ C { idt="pair", typ="Pair", sub = ["Val", "Val"]}]        
-
-rex2 = [Rule {name="updFst",
-             ps  =(Cons "pair" [Var "x", Var "y"]),
-             pv  =(Var "v"),
-             xpr =(CE "pair" [VarE "v", VarE "y"])}     
-      ]
+  rls = [Rule {name="updFst",
+               ps  =(Cons "pair" [Var "x", Var "y"]),
+               pv  =(Var "v"),
+               xpr =(CE "pair" [VarE "v", VarE "y"])}     
+        ]
+  }
 
 
 
 ---------------------------------------------------------------------
 --updLast
 
-typeofP3 = ToP {
-  typeofPS   = "NotNullList",
-  typeofPV   = "Val",
-  typeofExpr = "NotNullList"
-}
+ipt3 = I {
+  funs=[F {
+           fName = "updLast",
+           tps   = "NotNullList",
+           tpv   = "Val",
+           txp   = "NotNullList"
+          }
+       ],
 
-cex3 = [ C { idt="singleton", typ="NotNullList", sub = ["Val"]},
-         C { idt="cons", typ="NotNullList",
-             sub = ["Val", "NotNullList"]}
-       ]        
+  ctrs = [ C { idt="singleton", typ="NotNullList", sub = ["Val"]},
+           C { idt="cons", typ="NotNullList",
+               sub = ["Val", "NotNullList"]}
+         ], 
 
-rex3 = [Rule {name="updLast",
-             ps  =(Cons "singleton" [Var "s"]),
-             pv  =(Var "v"),
-             xpr =(CE "singleton" [VarE "v"])},
-
-        Rule {name="updLast",
-             ps  =(Cons "cons" [Var "s", Var "ss"]),
-             pv  =(Var "v"),
-             xpr =(CE "cons" [VarE "s", Fun "updLast" "ss" "v"])}
-      ]
+  rls = [Rule {name="updLast",
+               ps  =(Cons "singleton" [Var "s"]),
+               pv  =(Var "v"),
+               xpr =(CE "singleton" [VarE "v"])},
+         
+         Rule {name="updLast",
+               ps  =(Cons "cons" [Var "s", Var "ss"]),
+               pv  =(Var "v"),
+               xpr =(CE "cons" [VarE "s", Fun "updLast" "ss" "v"])}
+        ]
+  }
 
 ---------------------------------------------------------------------
 --putSyntactBad
 
+ipt4 = I {
+  funs=[F {
+           fName = "putSyntactBad",
+           tps   = "Val",
+           tpv   = "Val",
+           txp   = "Val"
+          }
+       ],
+  
+  ctrs = [],        
 
-typeofP4 = ToP {
-  typeofPS   = "Val",
-  typeofPV   = "Val",
-  typeofExpr = "Val"
-}
-
-cex4 = []        
-
-rex4 = [Rule {name="putSyntactBad",
-              ps  =(Var "s"),
-              pv  =(Var "v"),
+  rls = [Rule {name="putSyntactBad",
+               ps  =(Var "s"),
+               pv  =(Var "v"),
               xpr =(Fun "putSyntactBad" "s" "v")}    
-       ]
-
+        ]
+  }
+        
 
 ---------------------------------------------------------------------
 --putInvalid
 
+ipt5 = I {
+  funs=[F {
+           fName = "putInvalid",
+           tps   = "Val",
+           tpv   = "Val",
+           txp   = "Val"
+          }
+       ],
 
-typeofP5 = ToP {
-  typeofPS   = "Val",
-  typeofPV   = "Val",
-  typeofExpr = "Val"
-}
+  ctrs = [],        
 
-cex5 = []        
-
-rex5 = [Rule {name="putInvalid",
-             ps  =(Var "s"),
-             pv  =(Var "v"),
-             xpr =(VarE "s")}    
+  rls = [Rule {name="putInvalid",
+               ps  =(Var "s"),
+               pv  =(Var "v"),
+               xpr =(VarE "s")}    
       ]
-
+  }
+        
 ---------------------------------------------------------------------
 --mark
 
+ipt6 = I {
+  funs=[F {
+           fName = "goodMark",
+           tps   = "SsList",
+           tpv   = "VsList",
+           txp   = "SsList"
+          }
+       ],
+  
+  ctrs = [ 
+    C { idt="sscores", typ="Sscores", sub =["Mark","Mark","Mark"]},
+    C { idt="ssCons",  typ="SsList",  sub =["Sscores", "SsList"]},
+    C { idt="ssEmpty", typ="SsList",  sub =[]},
 
-
-typeofP6 = ToP {
-  typeofPS   = "SsList",
-  typeofPV   = "VsList",
-  typeofExpr = "SsList"
-}
-
-cex6 = [ 
-  C { idt="sscores", typ="Sscores", sub = ["Mark","Mark","Mark"]},
-  C { idt="ssCons",  typ="SsList",  sub = ["Sscores", "SsList"]},
-  C { idt="ssEmpty", typ="SsList",  sub = []},
-
-  C { idt="vscores", typ="Vscores", sub = ["Mark", "Mark"]},
-  C { idt="vsCons",  typ="VsList",  sub = ["Vscores", "VsList"]},
-  C { idt="vsEmpty", typ="VsList",  sub = []},
-
-  C { idt="A", typ="Mark", sub = []},
-  C { idt="B", typ="Mark", sub = []},
-  C { idt="C", typ="Mark", sub = []},
-  C { idt="D", typ="Mark", sub = []}
-  ]        
-
-
+    C { idt="vscores", typ="Vscores", sub =["Mark", "Mark"]},
+    C { idt="vsCons",  typ="VsList",  sub =["Vscores", "VsList"]},
+    C { idt="vsEmpty", typ="VsList",  sub =[]},
+  
+    C { idt="A", typ="Mark", sub = []},
+    C { idt="B", typ="Mark", sub = []},
+    C { idt="C", typ="Mark", sub = []},
+    C { idt="D", typ="Mark", sub = []}
+    ],
 {-
 goodMark   [ ] 		 	[ ]		=   [ ]
 goodMark   ss @ [ ] 		{xv, yv} : vs	=   {xv, A, yv} : goodMark ss vs
@@ -170,69 +190,70 @@ goodMark   {xs, C, zs} : ss 	vs	        =   {xs, C, zs} : goodMark ss vs
 goodMark   {xs, D, zs} : ss 	vs	        =   {xs, D, zs} : goodMark ss vs
 -}
 
-rex6 = [
-  Rule {name="goodMark",
-        ps  =(Cons "ssEmpty" []),
-        pv  =(Cons "vsEmpty" []),
-        xpr =(CE "ssEmpty" [])
-       },    
+  rls = [
+    Rule {name="goodMark",
+          ps  =(Cons "ssEmpty" []),
+          pv  =(Cons "vsEmpty" []),
+          xpr =(CE "ssEmpty" [])
+         },    
 
-  Rule {name="goodMark",
-        ps  =(LAV "ss"(Cons "ssEmpty" [])),        
-        pv  =(Cons "vsCons"
-              [Cons "vscores" [Var "xv", Var "yv"],
-               Var "vs"]),
-        xpr =(CE "ssCons"
-              [CE "sscores" [VarE "xv", CE "A" [], VarE "yv"],
-               Fun "goodMark" "ss" "vs"])
-       },    
-
-  Rule {name="goodMark",
-        ps  =(Cons "ssCons"
-              [Cons "sscores" [Var "xs", Cons "A" [], Var "zs"],
-               Var "ss"]),
-        pv  =(LAV "vs"(Cons "vsEmpty" [])),
-        xpr =(Fun "goodMark" "ss" "vs")
-       },    
-
-  Rule {name="goodMark",
-        ps  =(Cons "ssCons"
-              [Cons "sscores" [Var "xs", Cons "A" [], Var "zs"],
-               Var "ss"]),     
-        pv  =(Cons "vsCons"
-              [Cons "vscores" [Var "xv", Var "yv"],
-               Var "vs"]),
-        xpr =(CE "ssCons"
-              [CE "sscores" [VarE "xv", CE "A" [], VarE "yv"],
-               Fun "goodMark" "ss" "vs"])},
-
-  Rule {name="goodMark",
-        ps  =(Cons "ssCons"
-              [Cons "sscores" [Var "xs", Cons "B" [], Var "zs"],
-               Var "ss"]),     
-        pv  =(Var "vs"),
-        xpr =(CE "ssCons"
-              [CE "sscores" [VarE "xs", CE "B" [], VarE "zs"],
-               Fun "goodMark" "ss" "vs"])},
-
-  Rule {name="goodMark",
-        ps  =(Cons "ssCons"
-              [Cons "sscores" [Var "xs", Cons "C" [], Var "zs"],
-               Var "ss"]),     
-        pv  =(Var "vs"),
-        xpr =(CE "ssCons"
-              [CE "sscores" [VarE "xs", CE "C" [], VarE "zs"],
-               Fun "goodMark" "ss" "vs"])},
-
-  Rule {name="goodMark",
-        ps  =(Cons "ssCons"
-              [Cons "sscores" [Var "xs", Cons "D" [], Var "zs"],
-               Var "ss"]),     
-        pv  =(Var "vs"),
-        xpr =(CE "ssCons"
-              [CE "sscores" [VarE "xs", CE "D" [], VarE "zs"],
-               Fun "goodMark" "ss" "vs"])}
-  ]
+    Rule {name="goodMark",
+          ps  =(LAV "ss"(Cons "ssEmpty" [])),        
+          pv  =(Cons "vsCons"
+                [Cons "vscores" [Var "xv", Var "yv"],
+                 Var "vs"]),
+          xpr =(CE "ssCons"
+                [CE "sscores" [VarE "xv", CE "A" [], VarE "yv"],
+                 Fun "goodMark" "ss" "vs"])
+         },    
+    
+    Rule {name="goodMark",
+          ps  =(Cons "ssCons"
+                [Cons "sscores" [Var "xs", Cons "A" [], Var "zs"],
+                 Var "ss"]),
+          pv  =(LAV "vs"(Cons "vsEmpty" [])),
+          xpr =(Fun "goodMark" "ss" "vs")
+         },    
+    
+    Rule {name="goodMark",
+          ps  =(Cons "ssCons"
+                [Cons "sscores" [Var "xs", Cons "A" [], Var "zs"],
+                 Var "ss"]),     
+          pv  =(Cons "vsCons"
+                [Cons "vscores" [Var "xv", Var "yv"],
+                 Var "vs"]),
+          xpr =(CE "ssCons"
+                [CE "sscores" [VarE "xv", CE "A" [], VarE "yv"],
+                 Fun "goodMark" "ss" "vs"])},
+    
+    Rule {name="goodMark",
+          ps  =(Cons "ssCons"
+                [Cons "sscores" [Var "xs", Cons "B" [], Var "zs"],
+                 Var "ss"]),     
+          pv  =(Var "vs"),
+          xpr =(CE "ssCons"
+                [CE "sscores" [VarE "xs", CE "B" [], VarE "zs"],
+                 Fun "goodMark" "ss" "vs"])},
+    
+    Rule {name="goodMark",
+          ps  =(Cons "ssCons"
+                [Cons "sscores" [Var "xs", Cons "C" [], Var "zs"],
+                 Var "ss"]),     
+          pv  =(Var "vs"),
+          xpr =(CE "ssCons"
+                [CE "sscores" [VarE "xs", CE "C" [], VarE "zs"],
+                 Fun "goodMark" "ss" "vs"])},
+    
+    Rule {name="goodMark",
+          ps  =(Cons "ssCons"
+                [Cons "sscores" [Var "xs", Cons "D" [], Var "zs"],
+                 Var "ss"]),     
+          pv  =(Var "vs"),
+          xpr =(CE "ssCons"
+                [CE "sscores" [VarE "xs", CE "D" [], VarE "zs"],
+                 Fun "goodMark" "ss" "vs"])}
+    ]
+  }
 
 {-
    { [A,D,B],        
@@ -247,101 +268,310 @@ keep students who got A in second discipline
 
 ------------------------------------------------------------------
 
-typeofP = ToP {
-  typeofPS   = "NameList",
-  typeofPV   = "Number",
-  typeofExpr = "NameList"
-}
 
-cex7 = [ C { idt="a", typ="Char", sub = []},
-         C { idt="b", typ="Char", sub = []},
-         C { idt="c", typ="Char", sub = []},
-         C { idt="d", typ="Char", sub = []},
-         C { idt="e", typ="Char", sub = []},
-         C { idt="f", typ="Char", sub = []},
-         C { idt="g", typ="Char", sub = []},
-         C { idt="h", typ="Char", sub = []},
-         C { idt="i", typ="Char", sub = []},
-         C { idt="j", typ="Char", sub = []},
-         C { idt="k", typ="Char", sub = []},
-         C { idt="l", typ="Char", sub = []},
-         C { idt="m", typ="Char", sub = []},
-         C { idt="n", typ="Char", sub = []},
-         C { idt="o", typ="Char", sub = []},
-         C { idt="p", typ="Char", sub = []},
-         C { idt="q", typ="Char", sub = []},
-         C { idt="r", typ="Char", sub = []},
-         C { idt="s", typ="Char", sub = []},
-         C { idt="t", typ="Char", sub = []},
-         C { idt="u", typ="Char", sub = []},
-         C { idt="v", typ="Char", sub = []},
-         C { idt="w", typ="Char", sub = []},
-         C { idt="x", typ="Char", sub = []},
-         C { idt="y", typ="Char", sub = []},
-         C { idt="z", typ="Char", sub = []},
-         
-         C { idt="sglS" , typ="String", sub=["Char"]},
-         C { idt="consS", typ="String", sub=["Char", "String"]},
+ipt7 = I {
+  funs=[F {
+           fName = "nbtoto",
+           tps   = "NameList",
+           tpv   = "Number",
+           txp   = "NameList"
+          }
+       ],
 
-         C { idt="toto" ,  typ="Name", sub=[]},
-         C { idt="nototo", typ="Name", sub=["String"]},
-
-         C { idt="noName",typ="NameList", sub=[]},
-         C { idt="consLN",typ="NameList", sub=["Name","NameList"]},
+  ctrs = [
+    C { idt="a", typ="Char", sub = []},
+    C { idt="b", typ="Char", sub = []},
+    C { idt="c", typ="Char", sub = []},
+    C { idt="d", typ="Char", sub = []},
+    C { idt="e", typ="Char", sub = []},
+    C { idt="f", typ="Char", sub = []},
+    C { idt="g", typ="Char", sub = []},
+    C { idt="h", typ="Char", sub = []},
+    C { idt="i", typ="Char", sub = []},
+    C { idt="j", typ="Char", sub = []},
+    C { idt="k", typ="Char", sub = []},
+    C { idt="l", typ="Char", sub = []},
+    C { idt="m", typ="Char", sub = []},
+    C { idt="n", typ="Char", sub = []},
+    C { idt="o", typ="Char", sub = []},
+    C { idt="p", typ="Char", sub = []},
+    C { idt="q", typ="Char", sub = []},
+    C { idt="r", typ="Char", sub = []},
+    C { idt="s", typ="Char", sub = []},
+    C { idt="t", typ="Char", sub = []},
+    C { idt="u", typ="Char", sub = []},
+    C { idt="v", typ="Char", sub = []},
+    C { idt="w", typ="Char", sub = []},
+    C { idt="x", typ="Char", sub = []},
+    C { idt="y", typ="Char", sub = []},
+    C { idt="z", typ="Char", sub = []},
     
-         C { idt="zero", typ="Number", sub=[]},
-         C { idt="succ", typ="Number", sub=["Number"]}
-       ]
+    C { idt="sglS" , typ="String", sub=["Char"]},
+    C { idt="consS", typ="String", sub=["Char", "String"]},
+
+    C { idt="toto" ,  typ="Name", sub=[]},
+    C { idt="nototo", typ="Name", sub=["String"]},
+
+    C { idt="noName", typ="NameList", sub=[]},
+    C { idt="consLN", typ="NameList", sub=["Name","NameList"]},
+    
+    C { idt="zero", typ="Number", sub=[]},
+    C { idt="succ", typ="Number", sub=["Number"]}
+    ],
 
          
-rex7 = [
-  Rule {name="nbtoto",
-        ps  =(Cons "noName" []),
-        pv  =(Cons "zero" []),
-        xpr =(CE "noName" [])
-       },
+  rls = [
+    Rule {name="nbtoto",
+          ps  =(Cons "noName" []),
+          pv  =(Cons "zero" []),
+          xpr =(CE "noName" [])
+         },
+    
+    Rule {name="nbtoto",
+          ps  =(Cons "consLN" [Cons "toto" [], Var "ss"]),
+          pv  =(Cons "succ" [Var "vs"]),
+          xpr =(CE "consLN" [CE "toto" [], Fun "nbtoto" "ss" "vs"])
+         },    
+
+    Rule {name="nbtoto",
+          ps  =(LAV "ss" (Cons "noName" [])),
+          pv  =(Cons "succ" [Var "vs"]),
+          xpr =(CE "consLN" [CE "toto" [], Fun "nbtoto" "ss" "vs"])
+         },    
+
+    Rule {name="nbtoto",
+          ps  =(Cons "consLN" [Cons "toto" [], Var "ss"]),
+          pv  =(LAV "vs" (Cons "zero" [])),
+          xpr =(Fun "nbtoto" "ss" "vs")
+         },    
+
+    Rule {name="nbtoto",
+          ps  =(Cons "consLN" [Cons "nototo" [Var "n"], Var "ss"]),
+          pv  =(Var "vs"),
+          xpr =(CE "consLN" [CE "nototo" [VarE "n"],
+                             Fun "nbtoto" "ss" "vs"])
+         }
+    ]
+  }
+
+
+
+------------------------------------------------------------------
+--people
+
+------------------------------------------------------------------
+
+ipt8 = I {
+  funs=[F {
+           fName = "people",
+           tps   = "PrsnList",
+           tpv   = "NameList",
+           txp   = "PrsnList"
+          }
+       ],
+
+  ctrs = [ --source
+    C { idt="noPrsn" , typ="PrsnList", sub=[]},
+    C { idt="consP"  , typ="PrsnList", sub=["Person", "PrsnList"]},
+
+    C { idt="person" , typ="Person", sub=["String", "City"]},  
+    
+    C { idt="tokyo" ,  typ="City", sub=[]},
+    C { idt="notokyo", typ="City", sub=["String"]},
+
+    --view
+    C { idt="noName",typ="NameList", sub=[]},
+    C { idt="consLN",typ="NameList", sub=["String","NameList"]},
+    
+    --common
+    C { idt="sglS" , typ="String", sub=["Char"]},
+    C { idt="consS", typ="String", sub=["Char", "String"]},
+    
+    C { idt="a", typ="Char", sub = []},
+    C { idt="b", typ="Char", sub = []},
+    C { idt="c", typ="Char", sub = []},
+    C { idt="d", typ="Char", sub = []},
+    C { idt="e", typ="Char", sub = []},
+    C { idt="f", typ="Char", sub = []},
+    C { idt="g", typ="Char", sub = []},
+    C { idt="h", typ="Char", sub = []},
+    C { idt="i", typ="Char", sub = []},
+    C { idt="j", typ="Char", sub = []},
+    C { idt="k", typ="Char", sub = []},
+    C { idt="l", typ="Char", sub = []},
+    C { idt="m", typ="Char", sub = []},
+    C { idt="n", typ="Char", sub = []},
+    C { idt="o", typ="Char", sub = []},
+    C { idt="p", typ="Char", sub = []},
+    C { idt="q", typ="Char", sub = []},
+    C { idt="r", typ="Char", sub = []},
+    C { idt="s", typ="Char", sub = []},
+    C { idt="t", typ="Char", sub = []},
+    C { idt="u", typ="Char", sub = []},
+    C { idt="v", typ="Char", sub = []},
+    C { idt="w", typ="Char", sub = []},
+    C { idt="x", typ="Char", sub = []},
+    C { idt="y", typ="Char", sub = []},
+    C { idt="z", typ="Char", sub = []}
+    ],
+
+         
+  rls = [
+    Rule {name="people",
+          ps  =(Cons "noPrsn" []),
+          pv  =(Cons "noName" []),
+          xpr =(CE "noPrsn" [])
+         },
   
-  Rule {name="nbtoto",
-        ps  =(Cons "consLN" [Cons "toto" [], Var "ss"]),
-        pv  =(Cons "succ" [Var "vs"]),
-        xpr =(CE "consLN" [CE "toto" [], Fun "nbtoto" "ss" "vs"])
-       },    
-
-  Rule {name="nbtoto",
-        ps  =(LAV "ss" (Cons "noName" [])),
-        pv  =(Cons "succ" [Var "vs"]),
-        xpr =(CE "consLN" [CE "toto" [], Fun "nbtoto" "ss" "vs"])
-       },    
-
-  Rule {name="nbtoto",
-        ps  =(Cons "consLN" [Cons "toto" [], Var "ss"]),
-        pv  =(LAV "vs" (Cons "zero" [])),
-        xpr =(Fun "nbtoto" "ss" "vs")
-       },    
-
-  Rule {name="nbtoto",
-        ps  =(Cons "consLN" [Cons "nototo" [Var "n"], Var "ss"]),
-        pv  =(Var "vs"),
-        xpr =(CE "consLN" [CE "nototo" [VarE "n"],
-                           Fun "nbtoto" "ss" "vs"])
-       }
-  ]
-
-
-
-
-
-
-
-
-
-
-
-
-
+    Rule {name="people",
+          ps  =(LAV "ss" (Cons "noPrsn" [])),
+          pv  =(Cons "consLN" [Var "nv", Var "vs"]),
+          xpr =(CE "consP" [CE "person" [VarE "nv", CE "tokyo" []],
+                            Fun "people" "ss" "vs"])
+         },    
+    
+    Rule {name="people",
+          ps  =(Cons "consP" [Cons "person" [
+                                 Var "ns",
+                                 Cons "notokyo" [ Var "c"]],
+                              Var "ss"]),
+          pv  =(Var "vs"),
+          xpr =(CE "consP" [CE "person" [VarE "ns",
+                                         CE "notokyo" [VarE "c"]],
+                            Fun "people" "ss" "vs"])
+         },    
+    
+    Rule {name="people",
+          ps  =(Cons "consP" [Cons "person" [
+                                 Var "ns", Cons "tokyo" []],
+                              Var "ss"]),
+          pv  =(Cons "consLN" [Var "nv", Var "vs"]),
+          xpr =(CE "consP" [CE "person" [VarE "nv", CE "tokyo" []],
+                            Fun "people" "ss" "vs"])
+         },    
+    
+    Rule {name="people",
+          ps  =(Cons "consP" [Cons "person" [
+                                 Var "ns", Cons "tokyo" []],
+                              Var "ss"]),
+          pv  =(LAV "vs" (Cons "noName" [])),
+          xpr =(Fun "people" "ss" "vs")
+         }
+    ]
+  }
 
 
 
+------------------------------------------------------------------
+--addrbook
+------------------------------------------------------------------
+ipt9 = I {
+  funs=[F {
+           fName = "addbook",
+           tps   = "PrsnList",
+           tpv   = "NEList",
+           txp   = "PrsnList"
+          }
+       ],
+
+  ctrs = [ --source
+    C { idt="noPrsn" , typ="PrsnList", sub=[]},
+    C { idt="consP"  , typ="PrsnList", sub=["Person", "PrsnList"]},
+    
+    C { idt="person",typ="Person",
+        sub=["String","StringPlus","Tel"]},
+    
+    C { idt="sglMail" ,typ="StringPlus",sub=["String"]},
+    C { idt="consMail",typ="StringPlus",
+        sub=["String","StringPlus"]},
+
+    C { idt="tel", typ="Tel",
+        sub = ["Digit","Digit","Digit","Digit",
+               "Digit","Digit","Digit",
+               "Digit","Digit","Digit"]},
+    
+    --view
+    C { idt="noNE",   typ="NEList", sub=[]},
+    C { idt="consNE", typ="NEList", sub=["NE","NameList"]},
+
+    C { idt="shortP", typ="NE",sub=["String","String"]},
+    
+    -------------
+    
+    C { idt="sglS" , typ="String", sub=["Char"]},
+    C { idt="consS", typ="String", sub=["Char", "String"]},
+    
+    C { idt="a", typ="Char", sub = []},
+    C { idt="b", typ="Char", sub = []},
+    C { idt="c", typ="Char", sub = []},
+    C { idt="d", typ="Char", sub = []},
+    C { idt="e", typ="Char", sub = []},
+    C { idt="f", typ="Char", sub = []},
+    C { idt="g", typ="Char", sub = []},
+    C { idt="h", typ="Char", sub = []},
+    C { idt="i", typ="Char", sub = []},
+    C { idt="j", typ="Char", sub = []},
+    C { idt="k", typ="Char", sub = []},
+    C { idt="l", typ="Char", sub = []},
+    C { idt="m", typ="Char", sub = []},
+    C { idt="n", typ="Char", sub = []},
+    C { idt="o", typ="Char", sub = []},
+    C { idt="p", typ="Char", sub = []},
+    C { idt="q", typ="Char", sub = []},
+    C { idt="r", typ="Char", sub = []},
+    C { idt="s", typ="Char", sub = []},
+    C { idt="t", typ="Char", sub = []},
+    C { idt="u", typ="Char", sub = []},
+    C { idt="v", typ="Char", sub = []},
+    C { idt="w", typ="Char", sub = []},
+    C { idt="x", typ="Char", sub = []},
+    C { idt="y", typ="Char", sub = []},
+    C { idt="z", typ="Char", sub = []},
+
+    C { idt="0", typ="Digit", sub = []},
+    C { idt="1", typ="Digit", sub = []},
+    C { idt="2", typ="Digit", sub = []},
+    C { idt="3", typ="Digit", sub = []},
+    C { idt="4", typ="Digit", sub = []},
+    C { idt="5", typ="Digit", sub = []},
+    C { idt="6", typ="Digit", sub = []},
+    C { idt="7", typ="Digit", sub = []},
+    C { idt="8", typ="Digit", sub = []},
+    C { idt="9", typ="Digit", sub = []}
+
+    ],
+
+         
+  rls = [
+    Rule {name="addbook",
+          ps  =(Var "ss" ),
+          pv  =(Cons "noNE" []),
+          xpr =(CE "noPrsn" [])
+         },
+    
+    Rule {name="addbook",
+          ps  =(Var "ss"),
+          pv  =(Cons "consNE" [Var "v", Var "vs"]),
+          xpr =(CE "consP" [Fun "matchV" "ss" "v",
+                            Fun "addbook" "ss" "vs"])
+         },    
+    
+
+    Rule {name="matchV",
+          ps  =(Cons "consP" [Cons "Person" [
+                                 Var "ns",
+                                 Cons "consMail"[ Var "a",
+                                                  Var "as"],
+                                 Var "t"],
+                              Var "ss"]),
+          
+          pv  =(Cons "shortP" [Var "nv", Var "av"]),
+          xpr =(CE "consP" [Fun "matchV" "ss" "v",
+                            Fun "addbook" "ss" "vs"])
+         }
+
+    ]
+  }
 
 
 
@@ -373,13 +603,6 @@ rex7 = [
 
 ---------------------------------------------------------------------
 --people
-
-typeofP7 = ToP {
-  typeofPS   = "People",
-  typeofPV   = "FTokyo",
-  typeofExpr = "People"
-}
-
 
 
 {-

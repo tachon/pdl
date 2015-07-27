@@ -3,10 +3,6 @@ module AST where
 import qualified Data.Set as Set
 import qualified Data.List as List
 import Debug.Trace
------------------------------------------------------------
---Constructors used
---same exemple as paper
---to put to another file
 
 debug = False
 
@@ -16,10 +12,12 @@ mytrace msg val  = if debug then trace msg val
 mytrace2 msg val = if debug then trace (msg ++ (show val)) val
                    else val
 
-
 myError msg b   = if b then b else trace msg False
 
-type ID = String  --may switch to string
+
+------------------------------------------------------------------
+
+type ID = String
 
 type Tip = String
 
@@ -27,22 +25,6 @@ data C = C { idt :: ID,
              typ :: Tip,
              sub :: [Tip] 
            } deriving (Show, Eq, Ord)
-
-
-data TypeofPat = ToP { typeofPS :: Tip,
-                       typeofPV :: Tip,
-                       typeofExpr :: Tip
-                     }
-
-getC cl id = case List.find ((==) id . idt) cl of
-   Just c -> c
-   Nothing -> trace ("Constructor "++ show id
-                      ++ " does not exist")
-               C {idt="", typ="", sub = []}
-
-consOfType cl t = filter (\c -> typ c == t ) cl
-
-arity c = length $ sub c
 
 ------------------------------------------------------------------
 
@@ -61,6 +43,7 @@ data Rule = Rule { name :: String,
                    xpr :: Expr
                  } deriving (Eq)
 
+
 ------------------------------------------------------------------
 
 data RExpr = CRE ID [RExpr]
@@ -72,6 +55,49 @@ data ReversedRule = RRule { rn :: String,
                             op :: RExpr
                           } deriving (Eq)
 
+
+------------------------------------------------------------------
+
+data Fun = F { fName :: String,
+               tps   :: Tip,
+               tpv   :: Tip,
+               txp   :: Tip
+             } deriving (Show, Eq, Ord)
+
+data RFun = RF { rfName :: String,
+                 tip   :: Tip,
+                 top   :: Tip
+               } deriving (Show, Eq, Ord)
+
+
+------------------------------------------------------------------
+
+
+data Input = I { funs :: [Fun],
+                 ctrs :: [C],
+                 rls  :: [Rule]
+               }
+  
+
+
+getC cl id = case List.find ((==) id . idt) cl of
+   Just c -> c
+   Nothing -> trace ("Constructor "++ show id
+                      ++ " does not exist")
+               C {idt="", typ="", sub = []}
+
+consOfType cl t = filter (\c -> typ c == t ) cl
+
+arity c = length $ sub c
+
+getArgFun (VarE _)      = Nothing
+getArgFun (Fun _ a1 a2) = Just (a1, a2)
+getArgFun (CE i xpl)    =
+  foldl (\a xp -> case getArgFun xp of
+            Nothing -> a
+            Just a1 -> Just a1
+        ) Nothing xpl
+    
 
 instance Show Pat where
   show (Cons i pl)   = "C " ++ show i ++ " " ++ show pl
@@ -99,15 +125,6 @@ instance Show Rule where
     show vew ++ ")  =  " ++
     show xp  ++ "\n"
 
-getArgFun (VarE _)      = Nothing
-getArgFun (Fun _ a1 a2) = Just (a1, a2)
-getArgFun (CE i xpl)    =
-  foldl (\a xp -> case getArgFun xp of
-            Nothing -> a
-            Just a1 -> Just a1
-        ) Nothing xpl
-
-    
 
 class PatExpr a where
   goodNumberSub :: [C] -> a -> Bool

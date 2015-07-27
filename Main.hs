@@ -14,8 +14,9 @@ import Control.Applicative
 import Language.Maude.Exec
 
 import AST
-import ValidityChecking
+import SyntacticConstraints
 import Example
+import PatExhaustiveness
 import ViewDetermination
 import SourceStability
 
@@ -23,8 +24,10 @@ csiFile="singleValue.trs"
 citpFile="maude27-linux/citp/put.maude"
 maudeResFile="maude.txt"
 
-constructors=cex6
-rules=rex6
+input = ipt8
+functions    = funs input
+constructors = ctrs input
+rules        = rls  input
 
 main = do
 
@@ -34,7 +37,7 @@ main = do
     putStrLn "Syntactic Constraints are not respected"
     exitFailure
 
-  if totalityChecking constructors rules then
+  if totalityChecking functions constructors rules then
     putStrLn "Totality Checking.............................ok"
     else do
     putStrLn "This put function is not total"
@@ -61,7 +64,7 @@ main = do
       exitFailure
       
     
-  let (s,n) = writeCITPFile constructors rules rrules  
+  let (s,n) = writeCITPFile functions constructors rules rrules  
 
   writeFile citpFile s
     
