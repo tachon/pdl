@@ -1,65 +1,112 @@
 (fmod PUT-0 is
- sorts Tag TagList Val ValList .
+ sorts Char City NameList Person PrsnList String .
 ---
- op emptyT :  -> TagList [ctor] .
- op emptyV :  -> ValList [ctor] .
- op consT : Tag TagList -> TagList [ctor] .
- op consV : Val ValList -> ValList [ctor] .
- op TagA : Val -> Tag [ctor] .
- op TagB : Val -> Tag [ctor] .
+ op noPrsn :  -> PrsnList [ctor] .
+ op consP : Person PrsnList -> PrsnList [ctor] .
+ op person : String City -> Person [ctor] .
+ op tokyo :  -> City [ctor] .
+ op notokyo : String -> City [ctor] .
+ op noName :  -> NameList [ctor] .
+ op consLN : String NameList -> NameList [ctor] .
+ op sglS : Char -> String [ctor] .
+ op consS : Char String -> String [ctor] .
+ op a :  -> Char [ctor] .
+ op b :  -> Char [ctor] .
+ op c :  -> Char [ctor] .
+ op d :  -> Char [ctor] .
+ op e :  -> Char [ctor] .
+ op f :  -> Char [ctor] .
+ op g :  -> Char [ctor] .
+ op h :  -> Char [ctor] .
+ op i :  -> Char [ctor] .
+ op j :  -> Char [ctor] .
+ op k :  -> Char [ctor] .
+ op l :  -> Char [ctor] .
+ op m :  -> Char [ctor] .
+ op n :  -> Char [ctor] .
+ op o :  -> Char [ctor] .
+ op p :  -> Char [ctor] .
+ op q :  -> Char [ctor] .
+ op r :  -> Char [ctor] .
+ op s :  -> Char [ctor] .
+ op t :  -> Char [ctor] .
+ op u :  -> Char [ctor] .
+ op v :  -> Char [ctor] .
+ op w :  -> Char [ctor] .
+ op x :  -> Char [ctor] .
+ op y :  -> Char [ctor] .
+ op z :  -> Char [ctor] .
 ---
- vars ss ss1 x1 y1 : TagList .
- vars a b v : Val .
- vars vs : ValList .
+ vars vs : NameList .
+ vars ss ss1 x1 y1 : PrsnList .
+ vars c ns nv : String .
 ---
- op putAs : TagList ValList -> TagList .
- eq putAs(emptyT,emptyV) = emptyT .
- eq putAs(emptyT,consV(v,vs)) = consT(TagA(v),putAs(emptyT,vs)) .
- eq putAs(consT(TagA(a),ss),emptyV) = putAs(ss,emptyV) .
- eq putAs(consT(TagA(a),ss),consV(v,vs)) = consT(TagA(v),putAs(ss,vs)) .
- eq putAs(consT(TagB(b),ss),vs) = consT(TagB(b),putAs(ss,vs)) .
+ op people : PrsnList NameList -> PrsnList .
+ eq people(noPrsn,noName) = noPrsn .
+ eq people(noPrsn,consLN(nv,vs)) = consP(person(nv,tokyo),people(noPrsn,vs)) .
+ eq people(consP(person(ns,notokyo(c)),ss),vs) = consP(person(ns,notokyo(c)),people(ss,vs)) .
+ eq people(consP(person(ns,tokyo),ss),consLN(nv,vs)) = consP(person(nv,tokyo),people(ss,vs)) .
+ eq people(consP(person(ns,tokyo),ss),noName) = people(ss,noName) .
 
- op RputAs : TagList -> ValList .
- eq RputAs(emptyT) = emptyV .
- eq RputAs(consT(TagA(v),ss1)) = consV(v,RputAs(ss1)) .
- eq RputAs(consT(TagB(b),ss1)) = RputAs(ss1) .
+ op Rpeople : PrsnList -> NameList .
+ eq Rpeople(noPrsn) = noName .
+ eq Rpeople(consP(person(nv,tokyo),ss1)) = consLN(nv,Rpeople(ss1)) .
+ eq Rpeople(consP(person(ns,notokyo(c)),ss1)) = Rpeople(ss1) .
 
- op pr : TagList TagList -> TagList .
- eq pr(x1,y1) = putAs(x1,RputAs(y1)) .
+ op pr : PrsnList PrsnList -> PrsnList .
+ eq pr(x1,y1) = people(x1,Rpeople(y1)) .
 
 endfm)
 
-(goal PUT-0 |- ceq putAs(consT(var2:Tag,ss1:TagList),RputAs(consT(var2:Tag,ss1:TagList))) = consT(var2:Tag,ss1:TagList)
-	if putAs(ss1:TagList,RputAs(ss1:TagList)) = ss1:TagList ;)
-(set ind on var2:Tag .)
+
+
+(goal PUT-0 |- ceq people(consP(person(var7:String,var8:City),ss1:PrsnList),Rpeople(consP(person(var7:String,var8:City),ss1:PrsnList))) = consP(person(var7:String,var8:City),ss1:PrsnList)
+	if people(ss1:PrsnList,Rpeople(ss1:PrsnList)) = ss1:PrsnList ;)
+(set ind on var8:City .)
 (apply SI TC IP TC TC IP TC .)
 
 
 (fmod PUT-1 is
  inc PUT-0 .
 ----
- vars ss1 : TagList .
- vars var2 : Tag .
+ vars var7 : String .
+ vars ss1 : PrsnList .
+ vars var8 : City .
 ---
- ceq putAs(consT(var2,ss1),RputAs(consT(var2,ss1))) = consT(var2,ss1)
-	if putAs(ss1,RputAs(ss1)) = ss1 .
+ ceq people(consP(person(var7,var8),ss1),Rpeople(consP(person(var7,var8),ss1))) = consP(person(var7,var8),ss1)
+	if people(ss1,Rpeople(ss1)) = ss1 .
 endfm)
 
-(goal PUT-1 |- eq putAs(S:TagList,RputAs(S:TagList)) = S:TagList ;)
-(set ind on S:TagList .)
-(apply SI IP .)
+(goal PUT-1 |- ceq people(consP(var3:Person,ss1:PrsnList),Rpeople(consP(var3:Person,ss1:PrsnList))) = consP(var3:Person,ss1:PrsnList)
+	if people(ss1:PrsnList,Rpeople(ss1:PrsnList)) = ss1:PrsnList ;)
+(set ind on var3:Person .)
+(apply SI TC IP TC .)
 
 
 (fmod PUT-2 is
  inc PUT-1 .
- inc PUT-0 .
 ----
- vars S : TagList .
+ vars ss1 : PrsnList .
+ vars var3 : Person .
 ---
- eq putAs(S,RputAs(S)) = S .
+ ceq people(consP(var3,ss1),Rpeople(consP(var3,ss1))) = consP(var3,ss1)
+	if people(ss1,Rpeople(ss1)) = ss1 .
 endfm)
 
-(goal PUT-2 |- eq pr(S:TagList,S:TagList) = S:TagList ;)
+(goal PUT-2 |- eq people(S:PrsnList,Rpeople(S:PrsnList)) = S:PrsnList ;)
+(set ind on S:PrsnList .)
+(apply SI IP .)
+
+
+(fmod PUT-3 is
+ inc PUT-2 .
+----
+ vars S : PrsnList .
+---
+ eq people(S,Rpeople(S)) = S .
+endfm)
+
+(goal PUT-3 |- eq pr(S:PrsnList,S:PrsnList) = S:PrsnList ;)
 (apply TC IP .)
 
 

@@ -5,7 +5,7 @@ import qualified Data.List as List
 import Debug.Trace
 
 import AST
-import ValidityChecking
+import SyntacticConstraints
 
 newVar = "ss1"
 

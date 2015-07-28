@@ -73,7 +73,7 @@ ipt2 = I {
        
   ctrs = [ C { idt="pair", typ="Pair", sub = ["Val", "Val"]}],
 
-  rls = [Rule {name="updFst",
+  rls = [Rule {name="updFirst",
                ps  =(Cons "pair" [Var "x", Var "y"]),
                pv  =(Var "v"),
                xpr =(CE "pair" [VarE "v", VarE "y"])}     

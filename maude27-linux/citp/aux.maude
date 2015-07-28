@@ -1,0 +1,95 @@
+(fmod PUT-0 is
+ sorts Mark SsList Sscores VsList Vscores .
+---
+ op sscores : Mark Mark Mark -> Sscores [ctor] .
+ op ssCons : Sscores SsList -> SsList [ctor] .
+ op ssEmpty :  -> SsList [ctor] .
+ op vscores : Mark Mark -> Vscores [ctor] .
+ op vsCons : Vscores VsList -> VsList [ctor] .
+ op vsEmpty :  -> VsList [ctor] .
+ op A :  -> Mark [ctor] .
+ op B :  -> Mark [ctor] .
+ op C :  -> Mark [ctor] .
+ op D :  -> Mark [ctor] .
+---
+ vars xs xv yv zs : Mark .
+ vars ss ss1 x1 y1 : SsList .
+ vars vs : VsList .
+---
+ op goodMark : SsList VsList -> SsList .
+ eq goodMark(ssEmpty,vsEmpty) = ssEmpty .
+ eq goodMark(ssEmpty,vsCons(vscores(xv,yv),vs)) = ssCons(sscores(xv,A,yv),goodMark(ssEmpty,vs)) .
+ eq goodMark(ssCons(sscores(xs,A,zs),ss),vsEmpty) = goodMark(ss,vsEmpty) .
+ eq goodMark(ssCons(sscores(xs,A,zs),ss),vsCons(vscores(xv,yv),vs)) = ssCons(sscores(xv,A,yv),goodMark(ss,vs)) .
+ eq goodMark(ssCons(sscores(xs,B,zs),ss),vs) = ssCons(sscores(xs,B,zs),goodMark(ss,vs)) .
+ eq goodMark(ssCons(sscores(xs,C,zs),ss),vs) = ssCons(sscores(xs,C,zs),goodMark(ss,vs)) .
+ eq goodMark(ssCons(sscores(xs,D,zs),ss),vs) = ssCons(sscores(xs,D,zs),goodMark(ss,vs)) .
+
+ op RgoodMark : SsList -> VsList .
+ eq RgoodMark(ssEmpty) = vsEmpty .
+ eq RgoodMark(ssCons(sscores(xv,A,yv),ss1)) = vsCons(vscores(xv,yv),RgoodMark(ss1)) .
+ eq RgoodMark(ssCons(sscores(xs,B,zs),ss1)) = RgoodMark(ss1) .
+ eq RgoodMark(ssCons(sscores(xs,C,zs),ss1)) = RgoodMark(ss1) .
+ eq RgoodMark(ssCons(sscores(xs,D,zs),ss1)) = RgoodMark(ss1) .
+
+ op pr : SsList SsList -> SsList .
+ eq pr(x1,y1) = goodMark(x1,RgoodMark(y1)) .
+
+endfm)
+
+(goal PUT-0 |- ceq goodMark(ssCons(sscores(x:Mark,y:Mark,z:Mark),ss1:SsList),
+      	       	   RgoodMark(ssCons(sscores(x:Mark,y:Mark,z:Mark),ss1:SsList)))	 = 
+		   		ssCons(sscores(x:Mark,y:Mark,z:Mark),ss1:SsList)
+	if goodMark(ss1:SsList,RgoodMark(ss1:SsList)) = ss1:SsList ;)
+
+
+(set ind on y:Mark .)
+(apply SI TC IP TC TC IP TC TC IP TC TC IP TC .)
+
+(fmod PUT-1 is
+ inc PUT-0 .
+----
+ vars x y z : Mark .
+ vars ss1 : SsList .
+---
+ ceq goodMark(ssCons(sscores(x,y,z),ss1),
+      	   RgoodMark(ssCons(sscores(x,y,z),ss1))) = 
+	   	ssCons(sscores(x,y,z),ss1)
+	if goodMark(ss1,RgoodMark(ss1)) = ss1 .
+
+endfm)
+
+(goal PUT-1 |- ceq goodMark(ssCons(var2:Sscores,ss1:SsList),
+      	       	   RgoodMark(ssCons(var2:Sscores,ss1:SsList))) = 
+		   ssCons(var2:Sscores,ss1:SsList)
+	if goodMark(ss1:SsList,RgoodMark(ss1:SsList)) = ss1:SsList ;)
+
+(set ind on var2:Sscores .)
+(apply SI TC IP TC .)
+
+(fmod PUT-2 is
+ inc PUT-1 .
+----
+ vars var2 : Sscores .
+ vars ss1 : SsList .
+---
+ ceq goodMark(ssCons(var2,ss1),RgoodMark(ssCons(var2,ss1))) = ssCons(var2,ss1)
+	if goodMark(ss1,RgoodMark(ss1)) = ss1 .
+
+endfm)
+
+(goal PUT-2 |- eq goodMark(S:SsList,RgoodMark(S:SsList)) = S:SsList ;)
+(set ind on S:SsList .)
+(apply SI IP .)
+
+
+(fmod PUT-3 is
+ inc PUT-2 .
+----
+ vars S : SsList .
+---
+ eq goodMark(S,RgoodMark(S)) = S .
+endfm)
+
+(goal PUT-3 |- eq pr(S:SsList,S:SsList) = S:SsList ;)
+(apply TC IP .)

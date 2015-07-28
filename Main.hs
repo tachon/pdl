@@ -24,14 +24,14 @@ csiFile="singleValue.trs"
 citpFile="maude27-linux/citp/put.maude"
 maudeResFile="maude.txt"
 
-input = ipt8
+input = ipt9
 functions    = funs input
 constructors = ctrs input
 rules        = rls  input
 
 main = do
 
-  if syntacticConstraint constructors rules then
+  if syntacticConstraint functions constructors rules then
     putStrLn "Syntactic Constraint..........................ok"
     else do
     putStrLn "Syntactic Constraints are not respected"

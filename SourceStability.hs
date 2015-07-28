@@ -10,7 +10,7 @@ import Data.Char
 import AST
 import Example
 import PatExhaustiveness
-import ValidityChecking
+import SyntacticConstraints
 
 data Tactics = SI | CA | TC | IP | CS | RD | AUTO 
 
@@ -26,19 +26,23 @@ data Goal = EQU  Int String String GoalPat
             
 debug = True
 
-writeCITPFile csts rules rrules =
-  let (s,n) = writeGoals csts rrules (name $ head rules)
-              (rn $ head rrules)
-  in (writePUTmod csts rules rrules ++ s, n)
+writeCITPFile funs csts rules rrules =
+  let (s,n) = foldl (\(s1,n1) f ->
+                      let (s2,n2) = writeGoals csts rrules
+                                    f (reversedFun f)
+                      in (s1 ++ "\n\n" ++ s2, n1+n2)
+                    ) ("",0) funs
+  in (writePUTmod funs csts rules rrules ++ s, n)
   
-writePUTmod constructors rules rrules  =
+writePUTmod funs constructors rules rrules  =
   "(fmod PUT-0 is\n" --PUT to be changed
   ++ " sorts " ++ allTypes constructors ++ " .\n---\n"
   ++ writeConst constructors ++ "---\n"
-  ++ writeVars (getAllVars constructors rules rrules) ++ "---\n"
-  ++ writeRules rules ++ "\n"
-  ++ writeRRules rrules ++ "\n"
-  ++ writeSSProperty (name $ head rules) (rn $ head rrules)
+  ++ writeVars (getAllVars funs constructors rules rrules)
+  ++ "---\n"
+  ++ writeRules funs rules ++ "\n"
+  ++ writeRRules (reversedFuns funs) rrules ++ "\n"
+  ++ writeSSProperty funs
   ++ "\nendfm)\n\n" 
 
 allTypes constructors =
@@ -53,23 +57,28 @@ writeConst constructors=
           ++ " -> " ++ typ c ++ " [ctor] .\n"
         ) "" constructors
 
-getAllVars cons rules rrules =
-  foldl (
-    \map r -> 
-    let (_,map1) = patWellTyped cons (typeofPS typeofP) (ps r) Map.empty
-        (_,map2) = patWellTyped cons (typeofPV typeofP) (pv r) map1
-        --hoping same name -> same type : to be checked 
-    in Map.union map map2
-    ) Map.empty rules
+getAllVars funs cons rules rrules =
+  Map.foldWithKey
+  (\f rofs map ->
+    foldl (
+      \map r -> 
+      let (_,map1) = patWellTyped cons (tps f) (ps r) Map.empty
+          (_,map2) = patWellTyped cons (tpv f) (pv r) map1
+      in Map.union map map2
+      ) Map.empty rofs
+  ) Map.empty (rulesOfFuns funs rules)
   `Map.union`
-  foldl (
-    \map r -> 
-    let (_,map1) = patWellTyped cons (typeofExpr typeofP) (ip r) map 
-    in Map.union map map1
-    ) Map.empty rrules 
-  `Map.union`
-  (Map.fromList [("x1",(typeofExpr typeofP)), ("y1",(typeofExpr typeofP))])
-
+  Map.foldWithKey
+  (\rf rrofs map ->
+    foldl (
+      \map r -> 
+      let (_,map1) = patWellTyped cons (tip rf) (ip r) map 
+      in Map.union map map1
+      ) Map.empty rrules 
+    `Map.union`
+    (Map.fromList [("x1",(tip rf)), ("y1",(tip rf))])
+  ) Map.empty (rrulesOfFuns (reversedFuns funs) rrules)
+    
 writeVars vars =
   Map.foldWithKey
   (\t lv s ->
@@ -77,60 +86,67 @@ writeVars vars =
   ) "" (Map.foldWithKey
   (\v t m -> Map.insertWith (++) t [v] m) Map.empty vars)
 
-writeRules rules =
-  " op " ++ (name $ head rules) ++ " : " ++ (typeofPS typeofP) ++ " " ++
-  (typeofPV typeofP) ++ " -> " ++ (typeofExpr typeofP) ++ " .\n" ++
-  (unlines $ map
-   (\r ->
-     let env = getLAV r in
-     " eq " ++ (name r) ++ "(" 
-          ++ (toStringp $ ps r) ++ ","
-          ++ (toStringp $ pv r) ++ ") = "
-          ++ (toStringe env (xpr r)) ++ " .")
-   rules)
+writeRules funs rules =
+  foldl(\s f ->
+         " op " ++ (fName f) ++
+         " : " ++  (tps f) ++ " " ++ (tpv f) ++
+         " -> " ++ (txp f) ++ " .\n" ++
+         (unlines $ map
+          (\r ->
+            let env = getLAV r in
+            " eq " ++ (name r) ++ "(" 
+            ++ (toStringp $ ps r) ++ ","
+            ++ (toStringp $ pv r) ++ ") = "
+            ++ (toStringe env (xpr r)) ++ " .")
+          (filter ((fName f ==) . name) rules))
+       ) "" funs
+  
+writeRRules rfuns rrules =
+  foldl(\s rf ->
+         " op " ++ (rfName rf) ++
+         " : " ++  (tip rf) ++
+         " -> " ++ (top rf) ++ " .\n" ++
+         (unlines $ map
+          (\rr -> " eq " ++ (rn rr) ++ "(" 
+                  ++ (toStringp $ ip rr) ++ ") = "
+                  ++ (toStringre $ op rr) ++ " .")
+          (filter ((rfName rf ==) . rn) rrules))
+       ) "" rfuns
 
-writeRRules rrules =
-  " op " ++ (rn $ head rrules) ++ " : " ++ 
-  (typeofExpr typeofP) ++ " -> " ++ (typeofPV typeofP) ++ " .\n" ++
-  (unlines $ map
-   (\rr -> " eq " ++ (rn rr) ++ "(" 
-          ++ (toStringp $ ip rr) ++ ") = "
-          ++ (toStringre $ op rr) ++ " .")
-   rrules)
+writeSSProperty funs =
+  foldl (\s f ->
+          " op pr : " ++
+          (txp f) ++ " " ++
+          (txp f) ++ " -> " ++
+          (txp f) ++ " .\n" ++
+          " eq pr(x1,y1) = " ++ (fName f) ++
+          "(x1," ++ ('R' : (fName f)) ++ "(y1)) .\n"
+        ) "" funs
 
-writeSSProperty rulesName rrulesName=
-  " op pr : " ++
-  (typeofExpr typeofP) ++ " " ++
-  (typeofExpr typeofP) ++ " -> " ++
-  (typeofExpr typeofP) ++ " .\n" ++
-  " eq pr(x1,y1) = " ++ rulesName ++
-  "(x1," ++ rrulesName ++ "(y1)) .\n"
-
-
-writeGoals csts rrules nameR nameRR =
-  let lg = intermGoals csts rrules in
-  if null lg then ((lastGoals 0 nameR nameRR),0) else
+writeGoals csts rrules f rf =
+  let lg = intermGoals csts f rrules in
+  if null lg then ((lastGoals 0 f rf),0) else
     let (s1, n1) =
           foldl (
             \(s, n) (gp,gpIH) ->
             ---let Just (gp1, gpIH) = findVarIH gp rrules csts
-            let g = CEQ n nameR nameRR gp gpIH
+            let g = CEQ n (fName f) (rfName rf) gp gpIH
             in (s ++ show g 
             ++ writeInd gp
             ++ (applyTactics $ findTactics csts gp)
-            ++ createModule g (n+1) nameR nameRR , n+1)
+            ++ createModule g (n+1), n+1)
             ) ("", 0) lg 
-    in (s1 ++ (lastGoals n1 nameR nameRR), n1)
+    in (s1 ++ (lastGoals n1 f rf), n1)
 
-lastGoals n nameR nameRR =
-  let gp = VarG "S" (typeofExpr typeofP) True
-      g1 = EQU n nameR nameRR gp 
-      g2 = PR (n+1) (typeofExpr typeofP)
+lastGoals n f rf =
+  let gp = VarG "S" (tps f) True
+      g1 = EQU n (fName f) (rfName rf) gp 
+      g2 = PR (n+1) (tps f)
   in
   show g1 ++
   writeInd gp ++
   applyTactics [SI, IP] ++
-  createModule g1 (n+1) nameR nameRR ++
+  createModule g1 (n+1) ++
   show g2 ++ applyTactics [TC, IP]
   
 findTactics csts (ConsG id lg) =
@@ -146,7 +162,7 @@ writeInd g =
   "(set ind on" (findIndVars g ))
   ++ " .)\n"
 
-createModule g n nameR nameRR =
+createModule g n =
   "(fmod PUT-" ++ show n ++
   " is\n" ++ writeInclude (n-1) ++
   Map.foldWithKey
@@ -176,6 +192,7 @@ writeInclude n =
     " inc PUT-" ++ show n ++ " .\n----\n"
 --    ++ writeInclude (n-1)
 
+{-
 findVarIH g rrules cons =
   case List.find ((matchGP g) . ip) rrules of 
     Nothing -> Nothing
@@ -185,7 +202,7 @@ findVarIH g rrules cons =
         Nothing -> Nothing
         Just v  -> Just (putVarInGP g (ip rr) v,
                          VarG v (env Map.! v) False)
-
+-}
 
 putVarInGP (VarG s1 t b)   (Var s2)    v =
   if s2 == v then (VarG v t b) else (VarG s1 t b)
@@ -220,45 +237,12 @@ applyTactics lt =
   foldl(\s tct -> s ++ show tct ++ " ") "(apply " lt
   ++ ".)\n\n\n"
 
-{-
-intermGoals constructors rrules =
-  let (p,d) = foldl(\(p1,d1) rr ->
-                      let d2 = depth rr in
-                      if d2 > d1 then (ip rr, d2)
-                      else (p1,d1)
-                    ) (Var "", -1) rrules in
-  if d < 2 then []
-  else constructGoals constructors (d-1) p
--}
-
 depth rr = depthIP 0 $ ip rr
   
 depthIP n (Cons id []) = 0
 depthIP n (Cons id lp) = maximum $ map (depthIP (n+1)) lp
 depthIP n (LAV _ p)    = depthIP n p
 depthIP n (Var _)      = n + 1
-
-{-
-constructGoals csts d p =
-  if d == 1 then [] else
-  constructGoal csts initV d p : constructGoals csts (d-1) p 
-
-constructGoal csts v d (LAV _ p)    = constructGoal csts v d p
-constructGoal csts v d (Var _)      = VarG v (typeofExpr typeofP) True
-constructGoal csts v d (Cons id lp) =
-  let c = getC csts id in
-  if d == 1 then (VarG v (typ c) True)
-  else 
-    let (_,_,lg) =
-          (foldr
-           (\p (v1, n, lg1) -> case p of
-               (Var _) -> ((suc v1), (n-1),
-                           ((VarG v ((sub c) !! (n-1)) False):lg1))
-               _  -> (v1, n-1,
-                      (constructGoal csts (v1) (d-1) p):lg1)
-           ) (v, length lp, []) lp)
-    in ConsG id lg
--}
 
 initV  = "var1"
 incr s = let i = read (drop 3 s) :: Int
@@ -327,7 +311,7 @@ showLemma (PR _ _)= " eq pr(S,S) = S .\nendfm)\n\n"
 
 
 
-intermGoals constructors rrules =
+intermGoals constructors f rrules =
   let m  = maximum $ map (length . sub) constructors
       lg = Set.toList $
            foldl
@@ -340,30 +324,35 @@ intermGoals constructors rrules =
                           s
                           (0, toInteger m)
                           initV
-                          (typeofExpr typeofP)
+                          (txp f)
                           (ip rr)
                  in
-                  Set.insert
-                  (pp, VarG s (typeofPS typeofP) False) set
+                  if isRoot pp then set
+                  else
+                    Set.insert
+                    (pp, VarG s (tps f) False) set
            ) (Set.empty) rrules
   in lg ++
      foldl (\acc (pp, (VarG s _ _)) ->
-             (reverse (pToIH constructors s m pp)) ++ acc
+             (reverse (pToIH constructors f s m pp)) ++ acc
            ) [] lg
 
-pToIH csts s m pp =
+isRoot (VarG _ _ _) = True
+isRoot _            = False
+
+pToIH csts f s m pp =
   let pp1 = parentPattern
             csts
             s
             (0, toInteger m)
             initV
-            (typeofExpr typeofP)
+            (txp f)
             (toLemma pp)
   in case pp1 of
     (VarG _ _ _) -> []
     pp1          ->
-      (pp1, VarG s (typeofPS typeofP) False) :
-      (pToIH csts s m pp1)
+      (pp1, VarG s (tps f) False) :
+      (pToIH csts f s m pp1)
 
   
 patternIH (VarRE _)   = Nothing
@@ -381,7 +370,8 @@ parentPattern csts s1 (n,m) svar t (Cons id lp) =
   if and $ map (\p -> case p of
                    Var _ -> True
                    _     -> False) lp
-  then VarG svar t True 
+  then
+    VarG svar t True
   else
     let tsub = (sub $ getC csts id)
         sv1  = suc (n,m) svar in
@@ -389,6 +379,25 @@ parentPattern csts s1 (n,m) svar t (Cons id lp) =
               (iterate incr sv1) tsub lp)
 
 
+reversedFuns funs =
+  map (\f ->
+        RF {
+          rfName='R': (fName f) ,
+          tip   =tps f,
+          top   =tpv f
+          }) funs
+
+reversedFun f =
+  RF { rfName='R': (fName f) ,
+       tip   =tps f,
+       top   =tpv f
+     }
+  
+rrulesOfFuns rfuns rrules =
+  foldl (\map f ->
+          Map.insert f
+          (filter ((rfName f ==) . rn) rrules)
+          map) Map.empty rfuns
 
   {-
 for each RRules (not BC):
@@ -425,7 +434,15 @@ with each father -> son
 
 
 
-{-
+{-   _
+  __( (
+ |_    \____
+ |_
+ |_     ____
+ |_____/
+
+
+
      ___
     (p,q)___/)
      \wwwwwww)
@@ -458,7 +475,7 @@ with each father -> son
 
    ____              (-__-)                
   (-__-)           .___||
-    ||<@========>       >
+    ||<@========>        >
    _/\_
 
 -}

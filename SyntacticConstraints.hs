@@ -1,4 +1,4 @@
-module ValidityChecking where
+module SyntacticConstraints where
 
 import AST
 import PatExhaustiveness
@@ -9,23 +9,13 @@ import qualified Data.Map as Map
 import qualified Data.List as List
 
 
-
-
-syntacticConstraint cons rules =
+syntacticConstraint funs cons rules =
  argFunInPat rules
  && isAffine rules
  && goodNbSubInRules cons rules
- 
-
-totalityChecking cons rules =
-  wellTyped cons rules &&
-  allRulesUsefull cons rules &&
-  case i cons (ruleToMat rules) 2 of
-    Nothing -> True
-    Just p  -> trace ("Pattern not exhaustive \n"
-                      ++ "This pattern is not represented :\n"
-                      ++ (showPsPv p))
-               False
+ && goodName funs rules
+ --- && each rules has an existing name
+--- vinLAVnotInRightSide guaranted by typing
 
 argFunInPat rules =
   and $ map
@@ -85,6 +75,11 @@ goodNbSubInRules cons rules =
                    ((   goodNumberSub cons $ ps r)
                     && (goodNumberSub cons $ pv r)
                     && (goodNumberSub cons $ xpr r))) rules
+
+
+goodName funs rules =
+  myError "A Function is not defined" $ 
+  and $ map (\r -> any ((==) (name r) . fName) funs) rules
 
 
 toStringp (Cons id vp) =
