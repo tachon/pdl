@@ -9,7 +9,7 @@ import Data.Char
 
 import AST
 import Example
-import PatExhaustiveness
+import Totality
 import SyntacticConstraints
 
 data Tactics = SI | CA | TC | IP | CS | RD | AUTO 

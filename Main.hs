@@ -16,7 +16,7 @@ import Language.Maude.Exec
 import AST
 import SyntacticConstraints
 import Example
-import PatExhaustiveness
+import Totality
 import ViewDetermination
 import SourceStability
 

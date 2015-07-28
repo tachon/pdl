@@ -1,7 +1,7 @@
 module SyntacticConstraints where
 
 import AST
-import PatExhaustiveness
+import Totality
 
 import Debug.Trace
 import qualified Data.Set as Set

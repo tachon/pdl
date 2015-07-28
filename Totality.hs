@@ -1,4 +1,4 @@
-module PatExhaustiveness where
+module Totality where
 
 import qualified Data.Set as Set
 import qualified Data.List as List
