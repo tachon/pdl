@@ -1,0 +1,168 @@
+Usage: csi [options] <file> [timeout]
+
+Options:
+  --answer     Do not print an answer. (By default, either 'YES', 'NO', or 
+               'MAYBE' is printed.)
+  -a           See '--answer'.
+  --category   Takes a comma-separated list (no spaces) of categories for the 
+               input problem, the rewriting strategy, and the initial term 
+               language. Possible values are: 'ST' (standard termination 
+               problem), 'RT' (relative termination problem), 'CR' 
+               (Church-Rosser problem), 'FS' (full rewriting strategy, i.e., no 
+               strategy at all), 'IS' (innermost rewriting strategy), 'OS' 
+               (outermost rewriting strategy), 'AL' (the language of all terms), 
+               'CL' (the language of constructor-based terms). (If not specified 
+               otherwise, 'FS' and 'AL' are active by default.)
+  -C           See '--category'.
+  --conf       Specify configuration file. Detailed information about the 
+               syntax of configuration files can be obtained by './ttt2 --help'.
+  -c           See '--conf'.
+  --complexity Enables complexity mode. TTT2 can compute either the 
+               derivational complexity or runtime complexity of a given problem. 
+               To compute the derivational complexity of the given problem just 
+               specify 'DC'. To compute the runtime complexity of the given 
+               problem one has to add the flag 'RC'. If TTT2 should compute the 
+               complexity according to the information contained in the problem 
+               file just add the flag 'PC'. Note that not all processors yield 
+               feasible complexity bounds. So to guarantee a successful 
+               complexity proof also an appropriate strategy has to be chosen.
+  --cpf-output Use CPF for output (see 
+               http://cl-informatik.uibk.ac.at/software/ceta).
+  -cpf         See '--cpf-output'.
+  -cp          See '--complexity'.
+  -e           Print the answer on stderr instead of stdout.
+  -ext         Set file extension of input file to select parser.
+  --flags      If followed by '--processors', print flags of processors (order 
+               is important).
+  -f           See '--flags'.
+  --help       Display this list of options.
+  -help        See '--help'
+  -h           See '--help'
+  -html        Produce HTML output.
+  --locate     Print all processors that match the given POSIX regular 
+               expression.
+  -l           See '--locate'.
+  --optimize   Optimize complexity proofs. The strategies used to optimize a 
+               complexity proof have to be specified in a configuration file 
+               (see '--conf') and have to be named as follows: O(1) indicates a 
+               constant complexity bound, whereas O(n^m) indicates a polynomial 
+               complexity bound up to degree m. This flag only works in 
+               conjunction with '--cp'.
+  -pc          Do not print complexity annotation.
+  -ps          Print strategy on stdout.
+  -o           See '--optimize'.
+  --processors Print all available processors.
+  -P           See '--processors'.
+  --proof      Do not print a proof. By default, a proof is printed.
+  -p           See '--proof'.
+  -psat        Print SAT encoding in SMT-LIB format and fail.
+  -pstat       Print SAT-solving statistics.
+  --strategy   Specify a strategy. Detailed information about strategies can be 
+               obtained by './ttt2 --help'. By default, the strategy 'if 
+               standard then (var | con | (lpo || unfold[1] || (dp;(tdg | sccs | 
+               sc)*;(edg[2] | sccs | sc | sct | {ur?;lpo -dp -af[2]}restore | 
+               {ur?;matrix -dp -dim 2 -ib 2 -ob 2 -ur[2]}restore | 
+               uncurryx?;uncurryx -top )[10]*)!)) else if relative then (trivial 
+               | var | (unfold[2] || (( lpo -quasi | matrix -dim 2 -ib 2 -ob 3 | 
+               matrix -dim 3 -ib 2 -ob 2 | uncurryx )[10]*))) else fail' is 
+               used.
+  --stylesheet Set the stylesheet used for transforming CPF into HTML.
+  -s           See '--strategy'.
+  --stderr     Print answer on STDERR.
+  --stdin      Read input from STDIN.
+  -            See '--stdin'.
+  --time       Print wall clock time needed by TTT2 to execute the given 
+               strategy.
+  -t           See '--time'.
+  --version    Print TTT2 version.
+  -v           See '--version'.
+  -xml         Print an XML proof. (TTT2 uses its own XML format, which has to 
+               be transformed before certification.)
+  --xslt       Postprocess the output using a comma-separated list of XSL 
+               files.
+
+Strategy: A strategy is defined by the grammar
+  
+    s ::= m | (s) | c | i | e
+    c ::= s;s | s|s | s||s | if p then s else s
+    i ::= s? | s* | s+ | sn* | s[f]*
+    e ::= s% | s! | s[f] | {s}o
+  
+  where 's' expresses the possible strategies of TTT2, 'm' denotes the name of 
+  any available processor, 'p' denotes the name of any available predicate, and 
+  'c', 'i' and 'e' defines the available combinators, iterators and specifiers. 
+  Here combinators are used to combine two strategies whereas iterators are used 
+  to repeat a given strategy a designated number of times. In contrast, 
+  specifiers are used to control the behavior of strategies. A strategy works on 
+  a termination problem. Whenever TTT2 executes a strategy, internally, a so 
+  called proof object is constructed which represents the actual termination 
+  proof. Depending on the shape of the resulting proof object after applying a 
+  strategy 's', we say that 's' succeeded or 's' failed. This should not be 
+  confused with the possible answers of the prover: 'YES', 'NO', and 'MAYBE'. 
+  Here 'YES' means that termination could be proved, 'NO' indicates a successful 
+  non-termination proof, and MAYBE refers to the case when termination could 
+  neither be proved nor disproved. On success of a strategy 's' it depends on 
+  the internal proof object whether the final answer is 'YES' or 'NO'. On 
+  failure, the answer always is 'MAYBE'. Based on the two possibilities success 
+  or failure, the semantics of the strategy operators is as follows.
+  
+  Combinators:
+    - s;s': First applies 's' to the given problem. If this fails, then 's;s'' 
+      fails. Otherwise 's'' is applied to the resulting problems.
+    - s|s': Applies 's' to the given problem. If this succeeds, its result is 
+      returned. Otherwise 's'' is applied to the given problem.
+    - s||s': Runs 's' and 's'' in parallel on the given problem. As soon as at 
+      least one of 's' and 's'' succeeds, the resulting problem is returned.
+    - if p then s else s': Applies 's' to the given problem if 'p' is satisfied 
+      by the underlying problem. Otherwise 's'' is applied.
+  
+  Iterators:
+    - s?: Applies 's' to the given problem. On success its result is returned. 
+      Otherwise the original problem is returned unmodified.
+    - s*: Applies 's' recursively to the given problem until it cannot be 
+      modified any more. Note that 's*' always is successful.
+    - s+: Applies 's' recursively to the given problem until it cannot be 
+      modified any more. I.e., 's+' is successful if it can prove or disprove 
+      termination of the given problem. Otherwise it fails. Note that 's+ = 
+      s*;s' but 's+' is not equivalent to 's;s*'.
+    - sn*: Applies 's' recursively to the given problem until it cannot be 
+      modified any more or 's' has been applied 'n'-times. Note that 'sn*' 
+      always is successful.
+    - s[f]*: Applies 's' recursively to the given problem until it cannot be 
+      modified any more or 'f' seconds are elapsed. Note that 's[f]*' always is 
+      successful.
+  
+  Specifiers:
+    - s%: Applies 's' to the given problem. If 's' fails, the computation is 
+      aborted and 's%' fails. Otherwise it succeeds.
+    - s!: Applies 's' to the given problem. If 's' proves or disproves 
+      termination of the given problem, 's!' is successful. Otherwise it fails.
+    - s[f]: Tries to modify a given problem via 's' for at most 'f' seconds. If 
+      's' does not succeed or fail within 'f' seconds, 's[f]' fails. Otherwise 
+      's[f]' returns the resulting problem. Hence it succeeds (fails) if 's' 
+      succeeds (fails).
+    - {s}o: Applies 's' to the given problem. If 's' fails, '{s}o' fails. 
+      Otherwise the modifier 'o' is applied to the resulting problems.
+  
+  Currently, TTT2 supports various processors, modifiers and predicates to 
+  prove or disprove termination. Please see the complete list of processors by 
+  executing the command './ttt2 --processors' or './ttt2 -P'. Many processors 
+  can be configured in more detail by adding flags. The available flags of the 
+  processors can be inferred by adding '--flags' or '-f' to the previous 
+  commands. In addition you can also add the flag '--help' or '-h' to any 
+  processor within a strategy to obtain flag information on the fly (during a 
+  run of TTT2). Note that in such a case the execution is immediately aborted 
+  when the corresponding processor is reached. Last but not least you can also 
+  search for processor by stating a regular expression. In that case use the 
+  command './ttt2 --locate [regexp]' or './ttt2 -l [regexp]'.
+
+Configuration File: Since strategies can get quite complex, TTT2 provides the 
+  opportunity to specify a configuration file. This allows to abbreviate and 
+  connect different strategies. Abbreviations are defined according to the 
+  following syntax: 'n = s' where 'n' defines the name and 's' the strategy of 
+  the abbreviation. By convention strategy abbreviations are written in capital 
+  letters. To differ between different abbreviations, each abbreviation has to 
+  be put in a separate line. Sometimes it might be convenient to define a 
+  strategy over several lines. In that case you have to add a '\' to the end of 
+  each line. Last but not least you can add comments to a config file by putting 
+  a '#' in front of each line.

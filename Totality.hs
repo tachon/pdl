@@ -14,8 +14,9 @@ instance Show P where
   show Wildcard = "_"
   show( Cst i pl) = "C " ++ show i ++ " " ++ show pl
 
-totalityChecking funs cons rules =
-  wellTyped funs cons rules &&
+totalityChecking preds funs cons rules =
+  wellTyped preds funs cons rules &&
+  totalCases cons rules &&
   --allRulesUsefull cons rules &&
   case i cons (ruleToMat rules) 2 of
     Nothing -> True
@@ -37,13 +38,30 @@ prToP (Cons i lps)= Cst i (map prToP lps)
 prToP (LAV _ pfs) = prToP pfs 
 prToP (Var _)     = Wildcard
 
+iToP i = Cst i []
+  
+totalExpr cons (VarE _)         = True
+totalExpr cons (Fun _ _ _)      = True
+totalExpr cons (CE _ le)        = and $ map (totalExpr cons) le
+totalExpr cons (Case _ _ _ lbe) =
+  case i cons (List.group (map (iToP . fst) lbe)) 1 of
+    Nothing -> True
+    Just p  -> trace ("Case not exhaustive \n"
+                      ++ "This case is not represented :\n"
+                      ++ (show p))
+               False
+  && (and $ ((map (totalExpr cons) (map snd lbe))))
+  
+totalCases cons rules =
+  and $ map ((totalExpr cons) . xpr) rules
+              
 ruleToMat []     = [] 
 ruleToMat (r:rs) =
   mytrace (" row = " ++ (show [(prToP $ ps r) , (prToP $ pv r)]))
   [(prToP $ ps r) , (prToP $ pv r)]
   : ruleToMat rs
 
-createSigma _ [] = Set.empty
+createSigma _ []     = Set.empty
 createSigma _ ([]:_) = mytrace "Error : one line is empty"
                        Set.empty
 createSigma cons ((p:pline):pcol) =
@@ -153,25 +171,23 @@ findNEC cons m n (c:v) =
       Just $ (Cst (idt c) h) : t
 
 
-wellTyped funs cons rules =
+wellTyped preds funs cons rules =
   Map.foldWithKey
   (\f rofs b ->
     and $ map (
       \r ->
-      let (b1, env1) =
-            (patWellTyped cons (tps f) (ps r) Map.empty)
-          (b2, env2) =
-            (patWellTyped cons (tpv f) (pv r) Map.empty)
+      let (b1, env1) = (patWellTyped cons (tps f) (ps r) Map.empty)
+          (b2, env2) = (patWellTyped cons (tpv f) (pv r) Map.empty)
       in (myError ("in source Pattern of rule :\n" ++ show r) b1)
          && (myError ("in view Pattern of rule :\n" ++ show r) b2)
          && (myError ("in right hand side of rule :\n" ++ show r)
-             (exprWellTyped cons f (txp f) (xpr r)
+             (exprWellTyped cons preds funs (txp f) (xpr r)
               (Map.union env1 env2)))
       ) rules 
   ) True (rulesOfFuns funs rules) 
 
 patWellTyped _    t (Var s)     env = (True, Map.insert s t env)
-patWellTyped cons t (LAV s p)   env = (True, Map.insert s t env)
+patWellTyped _    t (LAV s p)   env = (True, Map.insert s t env)
 patWellTyped cons t (Cons i vp) env =
   let c = getC cons i
       b = (myError ("This pattern : " ++ show (Cons i vp)
@@ -188,30 +204,34 @@ patWellTyped cons t (Cons i vp) env =
 --                    patWellTyped cons t1 p1) (zip (sub c) vp))
 
 
-exprWellTyped _ f t (Fun n v1 v2) env =
-  (myError ("This function call " ++ show (Fun n v1 v2)
-            ++ " \tis of type " ++ show t
-            ++ " but is supposed to be of type "
-            ++ show (txp f))
-   (t == (txp f)))
-  && Map.member v1 env &&
-  let t1 = env Map.! v1 in
-  (myError ("The variable " ++ show v1
-            ++ " in function call " ++ show (Fun n v1 v2)
-            ++ " \tis of type " ++ show t1
-            ++ " but is supposed to be of type "
-            ++ show (tps f))
-   (t1 == (tps f)))
-  && Map.member v2 env &&
-  let t1 = env Map.! v2 in
-  (myError ("The variable " ++ show v2
-            ++ " in function call " ++ show (Fun n v1 v2)
-            ++ " \tis of type " ++ show t1
-            ++ " but is supposed to be of type "
-            ++ show (tpv f))
-   (t1 == (tpv f)))
+exprWellTyped _ _ funs t (Fun n v1 v2) env =
+  case List.find ((n == ) . fName) funs of
+    Nothing -> myError ("The function " ++ n ++
+                        " is not defined") False
+    Just f  ->
+      (myError ("This function call " ++ show (Fun n v1 v2)
+                ++ " \tis of type " ++ show t
+                ++ " but is supposed to be of type "
+                ++ show (txp f))
+       (t == (txp f)))
+      && Map.member v1 env &&
+      let t1 = env Map.! v1 in
+      (myError ("The variable " ++ show v1
+                ++ " in function call " ++ show (Fun n v1 v2)
+                ++ " \tis of type " ++ show t1
+                ++ " but is supposed to be of type "
+                ++ show (tps f))
+       (t1 == (tps f)))
+      && Map.member v2 env &&
+      let t2 = env Map.! v2 in
+      (myError ("The variable " ++ show v2
+                ++ " in function call " ++ show (Fun n v1 v2)
+                ++ " \tis of type " ++ show t2
+                ++ " but is supposed to be of type "
+                ++ show (tpv f))
+       (t2 == (tpv f)))
   
-exprWellTyped _ _ t (VarE v) env =
+exprWellTyped _ _ _ t (VarE v) env =
   let t1 = env Map.! v in
   (myError ("The variable " ++ show v
             ++ " does not exist in left side"
@@ -222,15 +242,41 @@ exprWellTyped _ _ t (VarE v) env =
             ++ " but is supposed to be of type " ++ show t)
    (t1 == t))
 
-exprWellTyped cons f t (CE i vp) env =
+exprWellTyped cons preds funs t (CE i vp) env =
   let c = getC cons i
   in (myError ("This expression : " ++ show (CE i vp)
                ++ " \tis of type " ++ show (typ c)
                ++ " but is supposed to be of type " ++ show t)
       (t == typ c)) &&
      (and $ map(\(t1, p1) ->
-                 exprWellTyped cons f t1 p1 env) (zip (sub c) vp))
+                 exprWellTyped cons preds funs t1 p1 env)
+      (zip (sub c) vp))
 
+
+exprWellTyped cons preds funs t (Case n v1 v2 lbe) env =
+  case List.find ((n == ) . pName) preds of
+    Nothing -> myError ("The predicate " ++ n ++
+                        " is not defined") False
+    Just f  ->
+      Map.member v1 env &&
+      let t1 = env Map.! v1 in
+      (myError ("The variable " ++ show v1
+                ++ " in predicate call " ++ show (Fun n v1 v2)
+                ++ " \tis of type " ++ show t1
+                ++ " but is supposed to be of type "
+                ++ show (tp1 f))
+       (t1 == (tp1 f)))
+      && Map.member v2 env &&
+      let t2 = env Map.! v2 in
+      (myError ("The variable " ++ show v2
+                ++ " in predicate call " ++ show (Fun n v1 v2)
+                ++ " \tis of type " ++ show t2
+                ++ " but is supposed to be of type "
+                ++ show (tp2 f))
+       (t2 == (tp2 f)))
+  &&
+  (and $ map(\p1 -> exprWellTyped cons preds funs t p1 env)
+   (map snd lbe))
 
 
 showPsPv [a,b] = "F   (" ++ show a ++ ")   ("

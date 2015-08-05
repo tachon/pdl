@@ -34,6 +34,7 @@ data Pat = Cons ID [Pat]
 
 data Expr = CE ID [Expr]
           | VarE String
+          | Case String String String [(ID, Expr)]
           | Fun String String String deriving (Eq)
           --     idFun x y
 
@@ -58,24 +59,43 @@ data ReversedRule = RRule { rn :: String,
 
 ------------------------------------------------------------------
 
-data Fun = F { fName :: String,
-               tps   :: Tip,
-               tpv   :: Tip,
-               txp   :: Tip
-             } deriving (Show, Eq, Ord)
+data Fun  = F  { fName :: String,
+                 tps   :: Tip,
+                 tpv   :: Tip,
+                 txp   :: Tip
+               } deriving (Show, Eq, Ord)
 
+--- reversed functions
 data RFun = RF { rfName :: String,
                  tip   :: Tip,
                  top   :: Tip
                } deriving (Show, Eq, Ord)
 
+--- expression of predicate (boolean)
+data BExpr = CB ID [BExpr]
+           | BFun String String String deriving (Eq)
+
+--- predicate rule
+data PRl = PRl { p1    :: Pat,
+                 p2    :: Pat,
+                 bxp   :: BExpr
+               } deriving (Eq)
+
+--- predicate
+data Pred = P  { pName :: String,
+                 tp1   :: Tip,
+                 tp2   :: Tip,
+                 tc    :: Tip,
+                 prl   :: [PRl]
+               } deriving (Eq)
 
 ------------------------------------------------------------------
 
 
 data Input = I { funs :: [Fun],
                  ctrs :: [C],
-                 rls  :: [Rule]
+                 rls  :: [Rule],
+                 prd  :: [Pred] 
                }
   
 
@@ -90,13 +110,12 @@ consOfType cl t = filter (\c -> typ c == t ) cl
 
 arity c = length $ sub c
 
-getArgFun (VarE _)      = Nothing
-getArgFun (Fun _ a1 a2) = Just (a1, a2)
-getArgFun (CE i xpl)    =
-  foldl (\a xp -> case getArgFun xp of
-            Nothing -> a
-            Just a1 -> Just a1
-        ) Nothing xpl
+getArgFun (VarE _)         = []
+getArgFun (Fun _ a1 a2)    = [(a1, a2)]
+getArgFun (Case _ _ _ ixp) =
+  foldl (\a xp -> a ++ (getArgFun $ snd xp)) [] ixp
+getArgFun (CE i xpl)       =
+  foldl (\a xp -> a ++ (getArgFun xp)) [] xpl
     
 
 instance Show Pat where
@@ -150,13 +169,19 @@ instance PatExpr Pat where
        ) && (and $ map (goodNumberSub cons) vp)
 
 instance PatExpr Expr where
-  getVariables (Fun _ s1 s2) = Set.insert s1 $ Set.singleton s2
-  getVariables (VarE s)      = Set.singleton s
+  getVariables (Fun _ x1 x2) = Set.insert x1 $ Set.singleton x2
+  getVariables (VarE x)      = Set.singleton x
+  getVariables (Case _  x1 x2 ixp) =
+     Set.union (Set.insert x1 $ Set.singleton x2) $
+    foldl (\acc (i,p) ->
+            Set.union acc (getVariables p)) Set.empty ixp
   getVariables (CE _ xp)     =
     foldl (\acc p -> Set.union acc (getVariables p)) Set.empty xp
     
   goodNumberSub _ (VarE _)     = True
   goodNumberSub _ (Fun _ _ _)  = True
+  goodNumberSub cons (Case _ _ _ ixp)  =
+    and $ map ((goodNumberSub cons) . snd) ixp
   goodNumberSub cons (CE i vp) =    
     let c    = getC cons i
         lsub = length $ sub c

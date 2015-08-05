@@ -1,7 +1,6 @@
 module SyntacticConstraints where
 
 import AST
-import Totality
 
 import Debug.Trace
 import qualified Data.Set as Set
@@ -19,30 +18,28 @@ syntacticConstraint funs cons rules =
 
 argFunInPat rules =
   and $ map
-  (\r ->
-    case getArgFun $ xpr r of
-      Nothing -> True
-      Just (a1, a2) ->(
-        myError ("Arguments " ++ show a1
-                 ++ " and " ++ show a2
-                 ++ " in right-hand side of rule :\n"
-                 ++ show r
-                 ++ "Must be variables which exists" 
-                 ++ " in their respective patterns")
-        (Set.member a1 (getVariables $ ps r) &&
-         Set.member a2 (getVariables $ pv r))
-        ) &&
-        myError ("As there is a function call in rule :\n"
-                 ++ show r
-                 ++ "At least one of its arguments must be"
-                 ++ " strictly smaller that its original pattern"
-                 ++ "\nIf not, function would loop infinitly")
-        (case (ps r, pv r) of
-            (Var a1 , Var a2 )   -> False
-            (LAV a1 _, Var a2)   -> False
-            (Var a1, LAV a2 _)   -> False
-            (LAV a1 _, LAV a2 _) -> False
-            _                    -> True)        
+  (\r -> (and $ map (
+      \(a1,a2) ->
+      (myError ("Arguments " ++ show a1
+                ++ " and " ++ show a2
+                ++ " in right-hand side of rule :\n"
+                ++ show r
+                ++ "Must be variables which exists" 
+                ++ " in their respective patterns")
+       (Set.member a1 (getVariables $ ps r) &&
+        Set.member a2 (getVariables $ pv r))
+      )) (getArgFun $ xpr r)) &&
+         myError ("As there is a function call in rule :\n"
+                  ++ show r
+                  ++ "At least one of its arguments must be"
+                  ++ " strictly smaller that its original pattern"
+                  ++ "\nIf not, function would loop infinitly")
+         (case (ps r, pv r) of
+             (Var _  , Var _ )  -> False
+             (LAV _ _, Var _ )  -> False
+             (Var _  , LAV _ _) -> False
+             (LAV _ _, LAV _ _) -> False
+             _                  -> True)        
   ) rules
 
 isAffine rules =
@@ -51,7 +48,7 @@ isAffine rules =
     myError ("In right side of rule :\n" ++ show r)
     (fst $ affineAux (getVariables e) e)) rules
 
-affineAux set (Fun _ s1 s2) =
+affineAux set (Fun _ s1 s2)   =
   ((myError ("The variable " ++ show s1 ++
              " must appear only once")
    (Set.member s1 set)) &&
@@ -59,16 +56,18 @@ affineAux set (Fun _ s1 s2) =
             " must appear only once")
    (Set.member s2 set)), (Set.delete s2 $ Set.delete s1 set))
 
-affineAux set (VarE s)      =
+affineAux set (VarE s)        =
   (myError ("The variable " ++ show s ++ " must appear only once")
   $ Set.member s set , Set.delete s set)
 
-affineAux set (CE _ xp)     =
+affineAux set (CE _ xp)       =
   foldl (\(b1, set1) p ->
           let (b2,set2) = affineAux set1 p in
           (b1 && b2, set2) 
         ) (True, set) xp
 
+affineAux set (Case _ _ _ ixp) =
+  ((and $ map (\(_,xp) -> fst $ affineAux set xp) ixp), set)
 
 goodNbSubInRules cons rules =
   and $ map (\r -> myError ("In rule\n" ++ show r)
@@ -112,6 +111,9 @@ toStringe env (Fun name arg1 arg2) =
    else arg2)
   ++ ")"
 
+toStringB ((f,x,y),i) =
+  f ++ "(" ++ x ++ "," ++ y ++ ") = " ++ i
+  
 getLAV rule =
   (getLAVP $ ps rule)
   `Map.union`

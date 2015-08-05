@@ -1,6 +1,5 @@
-(VAR c ns nv ss1)
+(VAR s ss1 v)
 (RULES
-  Rpeople(noPrsn) -> noName
-  Rpeople(consP(person(nv,tokyo),ss1)) -> consLN(nv,Rpeople(ss1))
-  Rpeople(consP(person(ns,notokyo(c)),ss1)) -> Rpeople(ss1)
+  RupdLast(singleton(v)) -> v
+  RupdLast(cons(s,ss1)) -> RupdLast(ss1)
 )

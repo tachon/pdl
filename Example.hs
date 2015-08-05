@@ -1,6 +1,57 @@
 module Example where
 import AST
 
+
+ipt0 = I {
+  funs=[F {
+           fName = "updLast",
+           tps   = "List",
+           tpv   = "Val",
+           txp   = "List"
+          }
+       ],
+
+  ctrs = [ C { idt="empty", typ="List", sub = []},
+           C { idt="cons", typ="List",
+               sub = ["Val", "List"]},
+           C { idt="true", typ="Bool", sub = []},
+           C { idt="false", typ="Bool", sub = []}
+         ], 
+
+  rls = [ Rule {name="updLast",
+                ps  =(Cons "cons" [Var "s", Var "ss"]),
+                pv  =(Var "v"),
+                xpr =(Case "sEmpty" "ss" "v"
+                      [ ("true",  CE "cons"
+                                  [VarE "v", CE "empty" []]),
+                        ("false", CE "cons"
+                                  [VarE "s",
+                                   Fun "updLast" "ss" "v"])
+                      ])
+               }
+        ],
+  
+  prd = [ P {
+             pName="sEmpty",
+             tp1  ="List",
+             tp2  ="Val",
+             tc   ="Bool",
+             prl  = [
+               PRl {p1 =(Cons "empty" []),
+                    p2 =(Var "v"),
+                    bxp=(CB "true" [])
+                   },
+               PRl {p1 =(Cons "cons" [Var "s", Var "ss"]),
+                    p2 =(Var "v"),
+                    bxp=(CB "false" []) 
+                   }
+               ]
+            }
+        ]
+  }
+
+       {-
+
 ipt1 = I {
   funs=[F {
            fName = "putAs",
@@ -579,7 +630,7 @@ ipt9 = I {
 
 
 
-
+-}
 
 
 

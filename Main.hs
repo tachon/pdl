@@ -24,7 +24,8 @@ csiFile="singleValue.trs"
 citpFile="maude27-linux/citp/put.maude"
 maudeResFile="maude.txt"
 
-input = ipt9
+input = ipt0
+predicates   = prd  input
 functions    = funs input
 constructors = ctrs input
 rules        = rls  input
@@ -37,7 +38,7 @@ main = do
     putStrLn "Syntactic Constraints are not respected"
     exitFailure
 
-  if totalityChecking functions constructors rules then
+  if totalityChecking predicates functions constructors rules then
     putStrLn "Totality Checking.............................ok"
     else do
     putStrLn "This put function is not total"

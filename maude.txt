@@ -3,7 +3,7 @@
 		     /||||||||||||||||||\
 	    Maude 2.7 built: Mar  3 2014 18:04:05
 	    Copyright 1997-2014 SRI International
-		   Tue Jul 28 16:03:35 2015
+		   Tue Jul 28 16:32:14 2015
 
 	    Full Maude 2.6.1e July 13th 2012
 
@@ -45,16 +45,13 @@ Introduced module PUT-0
 
   End of the module,
 
-  ceq people(consP(person(var7:String,var8:City),ss1:PrsnList),Rpeople(consP(
-    person(var7:String,var8:City),ss1:PrsnList))) = consP(person(var7:String,
-    var8:City),ss1:PrsnList)
-    if people(ss1:PrsnList,Rpeople(ss1:PrsnList))= ss1:PrsnList  --> to be
+  eq updLast(S:NotNullList,RupdLast(S:NotNullList)) = S:NotNullList  --> to be
     proved!
 >
 unproved
 
 INFO: an initial goal generated!
-INFO: Induction will be conducted on var8:City
+INFO: Induction will be conducted on S:NotNullList
 INFO: goal 1-1 is proved
 INFO: PROOF COMPLETED!
 Introduced module PUT-1
@@ -67,46 +64,7 @@ Introduced module PUT-1
 
   End of the module,
 
-  ceq people(consP(var3:Person,ss1:PrsnList),Rpeople(consP(var3:Person,
-    ss1:PrsnList))) = consP(var3:Person,ss1:PrsnList)
-    if people(ss1:PrsnList,Rpeople(ss1:PrsnList))= ss1:PrsnList  --> to be
-    proved!
->
-unproved
-
-INFO: an initial goal generated!
-INFO: Induction will be conducted on var3:Person
-INFO: goal 1-1 is proved
-INFO: PROOF COMPLETED!
-Introduced module PUT-2
-
-============================ GOAL 1-1 ============================
-< Module PUT-2 is concealed
-  ...
-  ...
-
-
-  End of the module,
-
-  eq people(S:PrsnList,Rpeople(S:PrsnList)) = S:PrsnList  --> to be proved!
->
-unproved
-
-INFO: an initial goal generated!
-INFO: Induction will be conducted on S:PrsnList
-INFO: goal 1-1 is proved
-INFO: PROOF COMPLETED!
-Introduced module PUT-3
-
-============================ GOAL 1-1 ============================
-< Module PUT-3 is concealed
-  ...
-  ...
-
-
-  End of the module,
-
-  eq pr(S:PrsnList,S:PrsnList) = S:PrsnList  --> to be proved!
+  eq pr(S:NotNullList,S:NotNullList) = S:NotNullList  --> to be proved!
 >
 unproved
 

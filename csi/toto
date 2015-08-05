@@ -1,15 +1,15 @@
 (VAR ss1 ss2 ss t p)
 (RULES
-  Rput(Cons(ss1,ss2)) -> Cons(RmatchSec(ss1),Rput(ss2))
+  Rput(ConsSS(ss1,ss2)) -> ConsVS(RunmatchSec(ss1),Rput(ss2))
   Rput(empty) -> empty
   RunmatchSec(ss) -> RmatchSec(ss)
   RunmatchSec(SecS(t, newSec, ss)) -> SecV(t, RallNewSub(ss))
   RmatchSec(SecS(t, p, ss)) -> SecV(t, RputSub(ss))
-  RallNewSub(Cons(SubS(t,newSub),ss)) -> Cons(v,RallNewSub(ss2))
+  RallNewSub(ConsSB(SubS(t,p),ss)) -> ConsVB(t,RallNewSub(ss))
   RallNewSub(empty) -> empty
-  RputSub(Cons(ss1,ss2)) -> Cons(RmatchSub(ss1),RputSub(ss2))
+  RputSub(ConsSB(ss1,ss2)) -> ConsVB(RunmatchSub(ss1),RputSub(ss2))
   RputSub(empty) -> empty
-  RmatchSub(ss) -> Rmatch(ss)
-  RmatchSub(SubS(t,newSub)) -> t
+  RunmatchSub(ss) -> Rmatch(ss)
+  RunmatchSub(SubS(t,newSub)) -> t
   Rmatch(SubS(t,p)) -> t
 )

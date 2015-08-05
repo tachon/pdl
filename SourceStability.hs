@@ -93,14 +93,30 @@ writeRules funs rules =
          " -> " ++ (txp f) ++ " .\n" ++
          (unlines $ map
           (\r ->
-            let env = getLAV r in
-            " eq " ++ (name r) ++ "(" 
-            ++ (toStringp $ ps r) ++ ","
-            ++ (toStringp $ pv r) ++ ") = "
-            ++ (toStringe env (xpr r)) ++ " .")
-          (filter ((fName f ==) . name) rules))
+            if isCase $ xpr r then
+              writeCEQRules r
+            else
+              let env = getLAV r in
+              " eq " ++ (name r) ++ "(" 
+              ++ (toStringp $ ps r) ++ ","
+              ++ (toStringp $ pv r) ++ ") = "
+              ++ (toStringe env (xpr r)) ++ " .")
+              (filter ((fName f ==) . name) rules))
        ) "" funs
-  
+
+writeCEQRules :: Rule -> String                  
+writeCEQRules r =
+  let s   = " eq " ++ (name r) ++ "(" 
+              ++ (toStringp $ ps r) ++ ","
+              ++ (toStringp $ pv r) ++ ") = "
+      env = getLAV r
+      lbe = noCase [] (xpr r)
+  in
+   foldl(\acc (lb, e) ->
+          s ++ (toStringe env e) ++ "\tif " ++
+          unwords (List.intersperse "/\\ " (map toStringB lb))
+        ) "" lbe
+   
 writeRRules rfuns rrules =
   foldl(\s rf ->
          " op " ++ (rfName rf) ++
@@ -399,7 +415,50 @@ rrulesOfFuns rfuns rrules =
           (filter ((rfName f ==) . rn) rrules)
           map) Map.empty rfuns
 
-  {-
+
+
+isCase (VarE _) = False
+isCase (Fun _ _ _) = False
+isCase (Case _ _ _ _) = True
+isCase (CE _ xp) = or $ map isCase xp
+
+noCase b (VarE x)    = [(b, (VarE x ))]
+noCase b (Fun f x y) = [(b, (Fun f x y))]
+noCase b (CE id xp)  =
+  let lbe  = map (noCase b) xp
+      tmpl = map unzip (constructCaseFun [] lbe lbe)
+  in  map (\(f,s) -> (concat f, (CE id s))) tmpl
+  
+  
+noCase b (Case f x1 x2 xpi) =  
+  concat $ foldl (\acc (i,xp) ->
+                   let b1 = (((f,x1,x2),i):b) in
+                   (noCase b1 xp) : acc
+                 ) [] xpi 
+
+
+constructCaseFun acc cll fll  =
+  if (and $ map isEmpty cll) then acc
+  else
+      let acc1 = (map head cll):acc
+          cll1 = fst $ foldr(
+            \(cl,fl) (acc,b) ->
+            if b then (case cl of
+                          []    -> ((fl:acc), True)
+                          (c:s) -> ((s:acc), False))
+            else ((cl:acc),b)
+            ) ([],True) (zip cll fll)
+      in constructCaseFun acc1 cll1 fll
+
+isEmpty [] = True
+isEmpty l = False
+
+
+
+
+
+
+{-
 for each RRules (not BC):
 - I make a map of (GoalPat, GoalPat) * INT
 - fst is the direct parent of pattern
