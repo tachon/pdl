@@ -16,7 +16,7 @@ instance Show P where
 
 totalityChecking funs cons rules =
   wellTyped funs cons rules &&
-  --allRulesUsefull cons rules &&
+  --allRulesUsefull cons rules && --check for overlapping patterns
   case i cons (ruleToMat rules) 2 of
     Nothing -> True
     Just p  -> trace ("Pattern not exhaustive \n"
@@ -184,8 +184,6 @@ patWellTyped cons t (Cons i vp) env =
                      in (wt && wt1, Map.union map map1 )
                    ) (True, env) (zip (sub c) vp)
   in (b && b1, env1)
---     (and $ map(\(t1, p1) ->
---                    patWellTyped cons t1 p1) (zip (sub c) vp))
 
 
 exprWellTyped _ f t (Fun n v1 v2) env =

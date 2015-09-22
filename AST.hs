@@ -3,7 +3,7 @@ module AST where
 import qualified Data.Set as Set
 import qualified Data.List as List
 import Debug.Trace
-
+ 
 debug = False
 
 mytrace msg val  = if debug then trace msg val

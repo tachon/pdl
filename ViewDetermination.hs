@@ -7,7 +7,7 @@ import Debug.Trace
 import AST
 import SyntacticConstraints
 
-newVar = "ss1"
+newVar = "ss1" --be sure this name is not used in input
 
 pvInXP rule =
   myError

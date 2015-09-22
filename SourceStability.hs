@@ -129,7 +129,6 @@ writeGoals csts rrules f rf =
     let (s1, n1) =
           foldl (
             \(s, n) (gp,gpIH) ->
-            ---let Just (gp1, gpIH) = findVarIH gp rrules csts
             let g = CEQ n (fName f) (rfName rf) gp gpIH
             in (s ++ show g 
             ++ writeInd gp
@@ -187,22 +186,8 @@ getGoalVars (CEQ _ _ _ gp1 gp2) =
 getGoalVars (PR _ t)            =
   Map.singleton t (Set.singleton "S")
 
-writeInclude n =
---  if n <= 0 then " inc PUT-0 .\n----\n" else
-    " inc PUT-" ++ show n ++ " .\n----\n"
---    ++ writeInclude (n-1)
+writeInclude n = " inc PUT-" ++ show n ++ " .\n----\n"
 
-{-
-findVarIH g rrules cons =
-  case List.find ((matchGP g) . ip) rrules of 
-    Nothing -> Nothing
-    Just rr ->
-      let (_, env) = patWellTyped cons (typeofExpr typeofP) (ip rr) Map.empty
-      in case findRecVar (op rr) of
-        Nothing -> Nothing
-        Just v  -> Just (putVarInGP g (ip rr) v,
-                         VarG v (env Map.! v) False)
--}
 
 putVarInGP (VarG s1 t b)   (Var s2)    v =
   if s2 == v then (VarG v t b) else (VarG s1 t b)
@@ -310,7 +295,6 @@ showLemma (CEQ _ put rput gp gpIH) =
 showLemma (PR _ _)= " eq pr(S,S) = S .\nendfm)\n\n"
 
 
-
 intermGoals constructors f rrules =
   let m  = maximum $ map (length . sub) constructors
       lg = Set.toList $
@@ -399,7 +383,9 @@ rrulesOfFuns rfuns rrules =
           (filter ((rfName f ==) . rn) rrules)
           map) Map.empty rfuns
 
-  {-
+
+
+{-
 for each RRules (not BC):
 - I make a map of (GoalPat, GoalPat) * INT
 - fst is the direct parent of pattern

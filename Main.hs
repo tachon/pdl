@@ -20,14 +20,16 @@ import Totality
 import ViewDetermination
 import SourceStability
 
-csiFile="singleValue.trs"
-citpFile="maude27-linux/citp/put.maude"
-maudeResFile="maude.txt"
 
-input = ipt9
+csiFile      = "singleValue.trs"
+citpFile     = "maude27-linux/citp/put.maude"
+maudeResFile = "maude.txt"
+
+input        = ipt1
 functions    = funs input
 constructors = ctrs input
 rules        = rls  input
+
 
 main = do
 
@@ -36,7 +38,7 @@ main = do
     else do
     putStrLn "Syntactic Constraints are not respected"
     exitFailure
-
+  
   if totalityChecking functions constructors rules then
     putStrLn "Totality Checking.............................ok"
     else do
@@ -92,20 +94,9 @@ main = do
   
   putStrLn "put function is valid"
   
-  
-{-
-
-
-  res <- runMaude
-             (MaudeConf{maudeCmd="./maude27-linux/maude.linux64",
-                        loadFiles=["maude27-linux/citp/ui.maude",citpFile]}) (Rewrite Text.empty)
-`catchIOError` (putStrLn $ Text.showText $ maudeFailureStderr)
-          
-  writeFile maudeResFile $ Text.showText $ maudeStdout res
-
--}
-  
+    
 nbProof s =
-  List.length $ filter ( \l -> l == "INFO: PROOF COMPLETED!"
-                       ) (lines s)
+  List.length $ filter (
+    \l -> l == "INFO: PROOF COMPLETED!"
+    ) (lines s)
   

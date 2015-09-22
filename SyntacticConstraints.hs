@@ -14,8 +14,6 @@ syntacticConstraint funs cons rules =
  && isAffine rules
  && goodNbSubInRules cons rules
  && goodName funs rules
- --- && each rules has an existing name
---- vinLAVnotInRightSide guaranted by typing
 
 argFunInPat rules =
   and $ map
@@ -45,11 +43,13 @@ argFunInPat rules =
             _                    -> True)        
   ) rules
 
+
 isAffine rules =
   and $ map
   (\r -> let e = xpr r in
     myError ("In right side of rule :\n" ++ show r)
     (fst $ affineAux (getVariables e) e)) rules
+
 
 affineAux set (Fun _ s1 s2) =
   ((myError ("The variable " ++ show s1 ++
